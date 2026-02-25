@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>智慧居家繼電器控制</title>
+<title>智慧居家監控系統</title>
 
 <style>
 body{
@@ -14,8 +14,8 @@ body{
   text-align:center;
 }
 .container{
-  max-width:600px;
-  margin:50px auto;
+  max-width:900px;
+  margin:40px auto;
 }
 .card{
   background:#111a2e;
@@ -24,27 +24,44 @@ body{
   border:1px solid #223154;
   margin-bottom:20px;
 }
-.status{
-  font-size:40px;
+.row{
+  display:flex;
+  gap:20px;
+  flex-wrap:wrap;
+  justify-content:center;
+}
+.box{
+  flex:1 1 200px;
+  background:#0f172a;
+  padding:15px;
+  border-radius:10px;
+}
+.value{
+  font-size:32px;
   font-weight:bold;
 }
 .on{color:#2dd4bf;}
 .off{color:#fb7185;}
 button{
-  padding:15px 25px;
-  font-size:18px;
+  padding:12px 25px;
+  font-size:16px;
   border-radius:10px;
   border:none;
   cursor:pointer;
   background:#2563eb;
   color:white;
 }
-button:disabled{
-  opacity:0.5;
-}
 .small{
   font-size:12px;
   color:#9db0d6;
+  margin-top:10px;
+}
+iframe{
+  width:100%;
+  height:260px;
+  border-radius:10px;
+  border:none;
+  background:white;
   margin-top:10px;
 }
 </style>
@@ -54,16 +71,57 @@ button:disabled{
 
 <div class="container">
 
+<h1>智慧居家監控系統</h1>
+
+<!-- ===== 感測器數值 ===== -->
 <div class="card">
-<h2>繼電器遠端控制</h2>
+<h2>即時感測器數據</h2>
 
-<div id="relayState" class="status">讀取中...</div>
+<div class="row">
+  <div class="box">
+    溫度
+    <div id="temp" class="value">--</div>
+  </div>
 
+  <div class="box">
+    濕度
+    <div id="humi" class="value">--</div>
+  </div>
+
+  <div class="box">
+    瓦斯
+    <div id="gas" class="value">--</div>
+  </div>
+</div>
+
+</div>
+
+<!-- ===== Relay 控制 ===== -->
+<div class="card">
+<h2>繼電器控制</h2>
+
+<div id="relayState" class="value">讀取中...</div>
+<br>
 <button id="toggleBtn">一鍵開關</button>
 
 <div class="small">
-命令來源：ThingSpeak Channel 3277178 field1
+命令 Channel: 3277178 field1
 </div>
+
+</div>
+
+<!-- ===== 圖表 ===== -->
+<div class="card">
+<h2>歷史圖表</h2>
+
+溫度
+<iframe src="https://thingspeak.com/channels/3271973/charts/1?dynamic=true"></iframe>
+
+濕度
+<iframe src="https://thingspeak.com/channels/3271973/charts/2?dynamic=true"></iframe>
+
+瓦斯
+<iframe src="https://thingspeak.com/channels/3271973/charts/3?dynamic=true"></iframe>
 
 </div>
 
@@ -71,74 +129,94 @@ button:disabled{
 
 <script>
 
-// ====== 你的命令 Channel ======
-const CHANNEL_ID = 3277178;
-const WRITE_KEY  = "OIX0C2JRKET8RVKK";   // ⚠️ 已公開
-const READ_KEY   = "GXZB8HZNOGR3U2SH";
+// ===== Channel A（感測器）=====
+const SENSOR_CHANNEL = 3271973;
 
-// 讀目前狀態
-async function getState(){
+// ===== Channel B（繼電器命令）=====
+const CMD_CHANNEL = 3277178;
+const CMD_WRITE_KEY = "OIX0C2JRKET8RVKK";
+const CMD_READ_KEY  = "GXZB8HZNOGR3U2SH";
+
+// 讀感測器
+async function getSensors(){
 
   const url =
-  `https://api.thingspeak.com/channels/${CHANNEL_ID}/feeds/last.json?api_key=${READ_KEY}`;
+  `https://api.thingspeak.com/channels/${SENSOR_CHANNEL}/feeds/last.json`;
+
+  const r = await fetch(url);
+  const j = await r.json();
+
+  document.getElementById("temp").innerHTML =
+    j.field1 ? j.field1 + " °C" : "--";
+
+  document.getElementById("humi").innerHTML =
+    j.field2 ? j.field2 + " %" : "--";
+
+  document.getElementById("gas").innerHTML =
+    j.field3 ? j.field3 : "--";
+}
+
+// 讀繼電器狀態
+async function getRelay(){
+
+  const url =
+  `https://api.thingspeak.com/channels/${CMD_CHANNEL}/feeds/last.json?api_key=${CMD_READ_KEY}`;
 
   const r = await fetch(url);
   const j = await r.json();
 
   const val = j.field1 === "1" ? 1 : 0;
 
-  renderState(val);
+  renderRelay(val);
 }
 
-// 畫面顯示
-function renderState(v){
+// 顯示Relay
+function renderRelay(v){
 
   const el = document.getElementById("relayState");
 
   if(v === 1){
     el.innerHTML = "ON";
-    el.className = "status on";
+    el.className = "value on";
     document.getElementById("toggleBtn").innerText = "按一下 → 關";
   }else{
     el.innerHTML = "OFF";
-    el.className = "status off";
+    el.className = "value off";
     document.getElementById("toggleBtn").innerText = "按一下 → 開";
   }
 
-  window.currentState = v;
+  window.currentRelay = v;
 }
 
-// 切換狀態
+// 切換Relay
 async function toggleRelay(){
 
-  const btn = document.getElementById("toggleBtn");
-  btn.disabled = true;
-
-  const next = window.currentState === 1 ? 0 : 1;
+  const next = window.currentRelay === 1 ? 0 : 1;
 
   const url =
-  `https://api.thingspeak.com/update?api_key=${WRITE_KEY}&field1=${next}`;
+  `https://api.thingspeak.com/update?api_key=${CMD_WRITE_KEY}&field1=${next}`;
 
   const r = await fetch(url);
   const result = await r.text();
 
   if(result === "0"){
-    alert("寫入失敗（可能 15 秒限制），請等一下再試");
+    alert("請間隔 15 秒以上再操作");
   }
 
-  setTimeout(getState, 1500);
-
-  btn.disabled = false;
+  setTimeout(getRelay, 1500);
 }
 
-// 事件綁定
-document.getElementById("toggleBtn").addEventListener("click", toggleRelay);
+// 綁定按鈕
+document.getElementById("toggleBtn")
+  .addEventListener("click", toggleRelay);
 
 // 初始讀取
-getState();
+getSensors();
+getRelay();
 
-// 每 5 秒更新一次狀態
-setInterval(getState, 5000);
+// 每 5 秒更新數值
+setInterval(getSensors, 5000);
+setInterval(getRelay, 5000);
 
 </script>
 
