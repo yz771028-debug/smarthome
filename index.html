@@ -14,7 +14,7 @@ body{
   text-align:center;
 }
 .container{
-  max-width:900px;
+  max-width:1000px;
   margin:40px auto;
 }
 .card{
@@ -31,7 +31,7 @@ body{
   justify-content:center;
 }
 .box{
-  flex:1 1 200px;
+  flex:1 1 220px;
   background:#0f172a;
   padding:15px;
   border-radius:10px;
@@ -50,6 +50,10 @@ button{
   cursor:pointer;
   background:#2563eb;
   color:white;
+  margin-top:10px;
+}
+button.danger{
+  background:#dc2626;
 }
 .small{
   font-size:12px;
@@ -73,7 +77,7 @@ iframe{
 
 <h1>智慧居家監控系統</h1>
 
-<!-- ===== 感測器數值 ===== -->
+<!-- 即時感測器 -->
 <div class="card">
 <h2>即時感測器數據</h2>
 
@@ -96,32 +100,39 @@ iframe{
 
 </div>
 
-<!-- ===== Relay 控制 ===== -->
+<!-- 繼電器控制 -->
 <div class="card">
 <h2>繼電器控制</h2>
 
 <div id="relayState" class="value">讀取中...</div>
-<br>
 <button id="toggleBtn">一鍵開關</button>
 
 <div class="small">
-命令 Channel: 3277178 field1
+命令來源：Channel 3277178 field1
 </div>
 
 </div>
 
-<!-- ===== 圖表 ===== -->
+<!-- 歷史圖表 -->
 <div class="card">
-<h2>歷史圖表</h2>
+<h2>歷史圖表（最近 20 筆）</h2>
+
+<button id="resetViewBtn" class="danger">
+⟳ 偽清除顯示（不刪資料）
+</button>
+
+<div class="small">
+僅重置顯示範圍為最近 20 筆，資料仍保留
+</div>
 
 溫度
-<iframe src="https://thingspeak.com/channels/3271973/charts/1?dynamic=true"></iframe>
+<iframe id="chartT"></iframe>
 
 濕度
-<iframe src="https://thingspeak.com/channels/3271973/charts/2?dynamic=true"></iframe>
+<iframe id="chartH"></iframe>
 
 瓦斯
-<iframe src="https://thingspeak.com/channels/3271973/charts/3?dynamic=true"></iframe>
+<iframe id="chartG"></iframe>
 
 </div>
 
@@ -132,7 +143,7 @@ iframe{
 // ===== Channel A（感測器）=====
 const SENSOR_CHANNEL = 3271973;
 
-// ===== Channel B（繼電器命令）=====
+// ===== Channel B（繼電器）=====
 const CMD_CHANNEL = 3277178;
 const CMD_WRITE_KEY = "OIX0C2JRKET8RVKK";
 const CMD_READ_KEY  = "GXZB8HZNOGR3U2SH";
@@ -156,7 +167,7 @@ async function getSensors(){
     j.field3 ? j.field3 : "--";
 }
 
-// 讀繼電器狀態
+// 讀繼電器
 async function getRelay(){
 
   const url =
@@ -170,7 +181,6 @@ async function getRelay(){
   renderRelay(val);
 }
 
-// 顯示Relay
 function renderRelay(v){
 
   const el = document.getElementById("relayState");
@@ -206,17 +216,43 @@ async function toggleRelay(){
   setTimeout(getRelay, 1500);
 }
 
-// 綁定按鈕
-document.getElementById("toggleBtn")
-  .addEventListener("click", toggleRelay);
+// 圖表控制
+function setChartsResults(n){
 
-// 初始讀取
+  const base =
+  `https://thingspeak.com/channels/${SENSOR_CHANNEL}/charts/`;
+
+  document.getElementById("chartT").src =
+    `${base}1?dynamic=true&results=${n}`;
+
+  document.getElementById("chartH").src =
+    `${base}2?dynamic=true&results=${n}`;
+
+  document.getElementById("chartG").src =
+    `${base}3?dynamic=true&results=${n}`;
+}
+
+// 偽清除
+document.getElementById("resetViewBtn")
+.addEventListener("click", () => {
+
+  setChartsResults(1);
+
+  setTimeout(()=>setChartsResults(20),1000);
+});
+
+// 事件
+document.getElementById("toggleBtn")
+.addEventListener("click", toggleRelay);
+
+// 初始化
+setChartsResults(20);
 getSensors();
 getRelay();
 
-// 每 5 秒更新數值
-setInterval(getSensors, 5000);
-setInterval(getRelay, 5000);
+// 每 5 秒更新
+setInterval(getSensors,5000);
+setInterval(getRelay,5000);
 
 </script>
 
