@@ -16,14 +16,13 @@
     --good:#2dd4bf;
     --warn:#facc15;
     --danger:#fb7185;
-    --blue:#60a5fa;
   }
 
   *{box-sizing:border-box}
 
   body{
     margin:0;
-    font-family:Arial, "Microsoft JhengHei", sans-serif;
+    font-family:Arial,"Microsoft JhengHei",sans-serif;
     background:linear-gradient(180deg,#0b1220,#10192b);
     color:var(--text);
   }
@@ -245,7 +244,7 @@
         <button class="secondary" onclick="sendFan('SWING')">轉</button>
       </div>
       <div class="footer-note">
-        風扇 B 為紅外線控制。按鍵送出後，ESP8266 會轉發給 MEGA，再由 YS-IRTM 發送紅外線碼。
+        風扇 B 為紅外線控制。ESP8266 會把指令轉給 MEGA，再由 YS-IRTM 發送紅外線碼。
       </div>
     </div>
 
@@ -255,8 +254,9 @@
         <canvas id="chart" height="110"></canvas>
       </div>
       <div class="footer-note">
-        ThingSpeak 感測資料通道：3271973。控制命令通道：3277178。<br>
-        ThingSpeak 免費版有寫入頻率限制，連續控制命令請間隔約 15 秒以上。
+        感測器 Channel：3271973<br>
+        命令 Channel：3277178<br>
+        ThingSpeak 免費版控制寫入請間隔約 15 秒以上。
       </div>
     </div>
 
@@ -271,6 +271,10 @@ const CMD_READ_KEY  = "GXZB8HZNOGR3U2SH";
 
 const TEMP_WARN = 35;
 const GAS_WARN = 350;
+
+// ===== 命令狀態快取：每次寫入都同時帶上 =====
+let currentRelayCmd = "0";
+let currentFanCmd = "OFF";
 
 // ===== 圖表 =====
 const ctx = document.getElementById('chart').getContext('2d');
@@ -362,13 +366,20 @@ async function getSensors() {
   chart.update();
 }
 
-// ===== Relay 狀態 =====
+// ===== 讀目前命令狀態 =====
 async function getRelayState() {
   const url = `https://api.thingspeak.com/channels/${CMD_CHANNEL}/feeds/last.json?api_key=${CMD_READ_KEY}`;
   const res = await fetch(url);
   const data = await res.json();
 
-  const relay = data.field1 === "1" ? 1 : 0;
+  if (data.field1 !== null && data.field1 !== undefined) {
+    currentRelayCmd = data.field1;
+  }
+  if (data.field2 !== null && data.field2 !== undefined) {
+    currentFanCmd = data.field2;
+  }
+
+  const relay = currentRelayCmd === "1" ? 1 : 0;
   const relayState = document.getElementById('relayState');
 
   if (relay === 1) {
@@ -382,33 +393,43 @@ async function getRelayState() {
   window.currentRelay = relay;
 }
 
-// ===== Relay 控制 =====
-async function setRelay(value) {
-  const url = `https://api.thingspeak.com/update?api_key=${CMD_WRITE_KEY}&field1=${value}`;
+// ===== 核心：每次都同時寫 field1 + field2 =====
+async function writeCommand(relayValue, fanValue) {
+  const url =
+    `https://api.thingspeak.com/update?api_key=${CMD_WRITE_KEY}` +
+    `&field1=${encodeURIComponent(relayValue)}` +
+    `&field2=${encodeURIComponent(fanValue)}`;
+
   const res = await fetch(url);
   const result = await res.text();
 
   if (result === "0") {
     alert("ThingSpeak 寫入失敗，請間隔 15 秒以上再操作");
-  } else {
+    return false;
+  }
+  return true;
+}
+
+// ===== Relay 控制 =====
+async function setRelay(value) {
+  currentRelayCmd = String(value);
+  const ok = await writeCommand(currentRelayCmd, currentFanCmd);
+  if (ok) {
     setTimeout(getRelayState, 1500);
   }
 }
 
-// ===== 風扇 B 紅外線控制 =====
+// ===== 風扇 B 控制 =====
 async function sendFan(mode) {
-  const url = `https://api.thingspeak.com/update?api_key=${CMD_WRITE_KEY}&field2=${mode}`;
-  const res = await fetch(url);
-  const result = await res.text();
-
-  if (result === "0") {
-    alert("ThingSpeak 寫入失敗，請間隔 15 秒以上再操作");
-  } else {
+  currentFanCmd = mode;
+  const ok = await writeCommand(currentRelayCmd, currentFanCmd);
+  if (ok) {
     alert(`已送出紅外線命令：${mode}`);
+    setTimeout(getRelayState, 1500);
   }
 }
 
-// ===== 自動更新 =====
+// ===== 初始化 =====
 getSensors();
 getRelayState();
 
