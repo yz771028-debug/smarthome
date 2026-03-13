@@ -114,20 +114,6 @@
     cursor:pointer;
     background:#2563eb;
     color:white;
-    transition:.2s;
-  }
-
-  button:hover{
-    transform:translateY(-1px);
-    opacity:.95;
-  }
-
-  button.secondary{
-    background:#334155;
-  }
-
-  button.danger-btn{
-    background:#dc2626;
   }
 
   .relay-state{
@@ -143,13 +129,6 @@
     padding:12px;
   }
 
-  .footer-note{
-    margin-top:12px;
-    color:var(--muted);
-    font-size:13px;
-    line-height:1.6;
-  }
-
   .alert-banner{
     display:none;
     margin-bottom:16px;
@@ -162,25 +141,13 @@
   }
 
   .show{ display:block; }
-
-  @media (max-width: 900px){
-    .sensor-grid{
-      grid-template-columns:1fr;
-    }
-    .sensor-value{
-      font-size:32px;
-    }
-    h1{
-      font-size:26px;
-    }
-  }
 </style>
 </head>
 <body>
 
 <div class="wrap">
   <h1>智慧居家控制系統</h1>
-  <div class="subtitle">溫溼度、瓦斯監測、Relay 風扇 A、自動安全控制、紅外線風扇 B</div>
+  <div class="subtitle">3 Channel 版</div>
 
   <div id="alertBanner" class="alert-banner">🚨 瓦斯濃度過高，系統已進入警報狀態</div>
 
@@ -214,18 +181,18 @@
       <div id="relayState" class="relay-state">讀取中...</div>
       <div class="control-row">
         <button onclick="setRelay(1)">開啟</button>
-        <button class="secondary" onclick="setRelay(0)">關閉</button>
+        <button onclick="setRelay(0)">關閉</button>
       </div>
     </div>
 
     <div class="card">
       <div class="title">紅外線風扇 B 控制</div>
       <div class="control-row">
-        <button class="danger-btn" onclick="sendFan('OFF')">關</button>
+        <button onclick="sendFan('OFF')">關</button>
         <button onclick="sendFan('LOW')">弱</button>
         <button onclick="sendFan('MID')">中</button>
         <button onclick="sendFan('HIGH')">強</button>
-        <button class="secondary" onclick="sendFan('SWING')">轉</button>
+        <button onclick="sendFan('SWING')">轉</button>
       </div>
     </div>
 
@@ -234,9 +201,6 @@
       <div class="chart-box">
         <canvas id="chart" height="110"></canvas>
       </div>
-      <div class="footer-note">
-        ThingSpeak 免費版控制寫入請間隔 15 秒以上。
-      </div>
     </div>
 
   </div>
@@ -244,18 +208,19 @@
 
 <script>
 const SENSOR_CHANNEL = 3271973;
-const CMD_CHANNEL = 3277178;
-const CMD_WRITE_KEY = "OIX0C2JRKET8RVKK";
-const CMD_READ_KEY  = "GXZB8HZNOGR3U2SH";
+
+// Relay Channel
+const RELAY_CHANNEL = 3277178;
+const RELAY_READ_KEY = "GXZB8HZNOGR3U2SH";
+const RELAY_WRITE_KEY = "OIX0C2JRKET8RVKK";
+
+// IR Channel
+const IR_CHANNEL = 3298830;
+const IR_WRITE_KEY = "QQF8NVXGW6D8DKCM";
 
 const TEMP_WARN = 35;
 const GAS_WARN = 350;
 
-// 永遠保存目前命令狀態
-let currentRelayCmd = "0";
-let currentFanCmd = "OFF";
-
-// ===== 圖表 =====
 const ctx = document.getElementById('chart').getContext('2d');
 const chart = new Chart(ctx, {
   type: 'line',
@@ -266,41 +231,18 @@ const chart = new Chart(ctx, {
         label: '溫度 °C',
         data: [],
         borderColor: '#2dd4bf',
-        backgroundColor: 'rgba(45,212,191,0.12)',
-        tension: 0.35,
-        fill: false
+        tension: 0.35
       },
       {
         label: '瓦斯',
         data: [],
         borderColor: '#fb7185',
-        backgroundColor: 'rgba(251,113,133,0.12)',
-        tension: 0.35,
-        fill: false
+        tension: 0.35
       }
     ]
-  },
-  options: {
-    responsive: true,
-    plugins: {
-      legend: {
-        labels: { color: '#eef4ff' }
-      }
-    },
-    scales: {
-      x: {
-        ticks: { color: '#eef4ff' },
-        grid: { color: 'rgba(255,255,255,0.06)' }
-      },
-      y: {
-        ticks: { color: '#eef4ff' },
-        grid: { color: 'rgba(255,255,255,0.06)' }
-      }
-    }
   }
 });
 
-// ===== 感測器 =====
 async function getSensors() {
   const url = `https://api.thingspeak.com/channels/${SENSOR_CHANNEL}/feeds.json?results=20`;
   const res = await fetch(url);
@@ -345,22 +287,15 @@ async function getSensors() {
   chart.update();
 }
 
-// ===== 讀目前控制狀態 =====
 async function getRelayState() {
-  const url = `https://api.thingspeak.com/channels/${CMD_CHANNEL}/feeds/last.json?api_key=${CMD_READ_KEY}`;
+  const url = `https://api.thingspeak.com/channels/${RELAY_CHANNEL}/feeds/last.json?api_key=${RELAY_READ_KEY}`;
   const res = await fetch(url);
   const data = await res.json();
 
-  if (data.field1 !== null && data.field1 !== undefined) {
-    currentRelayCmd = String(data.field1);
-  }
-  if (data.field2 !== null && data.field2 !== undefined) {
-    currentFanCmd = String(data.field2);
-  }
-
+  const relay = data.field1 === "1" ? 1 : 0;
   const relayState = document.getElementById('relayState');
 
-  if (currentRelayCmd === "1") {
+  if (relay === 1) {
     relayState.textContent = 'ON';
     relayState.className = 'relay-state safe';
   } else {
@@ -369,45 +304,30 @@ async function getRelayState() {
   }
 }
 
-// ===== 核心：每次都同時寫 field1 + field2 =====
-async function writeCommand(relayValue, fanValue) {
-  const url =
-    `https://api.thingspeak.com/update?api_key=${CMD_WRITE_KEY}` +
-    `&field1=${encodeURIComponent(relayValue)}` +
-    `&field2=${encodeURIComponent(fanValue)}`;
-
-  console.log("WRITE URL =", url);
-
+async function setRelay(value) {
+  const url = `https://api.thingspeak.com/update?api_key=${RELAY_WRITE_KEY}&field1=${value}`;
   const res = await fetch(url);
   const result = await res.text();
 
-  console.log("ThingSpeak result =", result);
-
   if (result === "0") {
-    alert("ThingSpeak 寫入失敗，請間隔 15 秒以上再操作");
-    return false;
-  }
-  return true;
-}
-
-// ===== Relay =====
-async function setRelay(value) {
-  currentRelayCmd = String(value);
-  const ok = await writeCommand(currentRelayCmd, currentFanCmd);
-  if (ok) setTimeout(getRelayState, 1500);
-}
-
-// ===== IR Fan =====
-async function sendFan(mode) {
-  currentFanCmd = mode;
-  const ok = await writeCommand(currentRelayCmd, currentFanCmd);
-  if (ok) {
-    alert(`已送出紅外線命令：${mode}`);
+    alert("Relay Channel 寫入失敗，請稍後再試");
+  } else {
     setTimeout(getRelayState, 1500);
   }
 }
 
-// ===== 初始化 =====
+async function sendFan(mode) {
+  const url = `https://api.thingspeak.com/update?api_key=${IR_WRITE_KEY}&field1=${mode}`;
+  const res = await fetch(url);
+  const result = await res.text();
+
+  if (result === "0") {
+    alert("IR Channel 寫入失敗，請稍後再試");
+  } else {
+    alert(`已送出 IR 命令：${mode}`);
+  }
+}
+
 getSensors();
 getRelayState();
 
