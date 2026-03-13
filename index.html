@@ -1,259 +1,419 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="zh-Hant">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>智慧居家監控系統</title>
-
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>智慧居家控制系統</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
-body{
-  margin:0;
-  font-family:Arial;
-  background:#0b1220;
-  color:white;
-  text-align:center;
-}
-.container{
-  max-width:1000px;
-  margin:40px auto;
-}
-.card{
-  background:#111a2e;
-  padding:20px;
-  border-radius:12px;
-  border:1px solid #223154;
-  margin-bottom:20px;
-}
-.row{
-  display:flex;
-  gap:20px;
-  flex-wrap:wrap;
-  justify-content:center;
-}
-.box{
-  flex:1 1 220px;
-  background:#0f172a;
-  padding:15px;
-  border-radius:10px;
-}
-.value{
-  font-size:32px;
-  font-weight:bold;
-}
-.on{color:#2dd4bf;}
-.off{color:#fb7185;}
-button{
-  padding:12px 25px;
-  font-size:16px;
-  border-radius:10px;
-  border:none;
-  cursor:pointer;
-  background:#2563eb;
-  color:white;
-  margin-top:10px;
-}
-button.danger{
-  background:#dc2626;
-}
-.small{
-  font-size:12px;
-  color:#9db0d6;
-  margin-top:10px;
-}
-iframe{
-  width:100%;
-  height:260px;
-  border-radius:10px;
-  border:none;
-  background:white;
-  margin-top:10px;
-}
+  :root{
+    --bg:#0b1220;
+    --card:#131c2f;
+    --card2:#0f1728;
+    --line:#24324f;
+    --text:#eef4ff;
+    --muted:#9db0d6;
+    --good:#2dd4bf;
+    --warn:#facc15;
+    --danger:#fb7185;
+    --blue:#60a5fa;
+  }
+
+  *{box-sizing:border-box}
+
+  body{
+    margin:0;
+    font-family:Arial, "Microsoft JhengHei", sans-serif;
+    background:linear-gradient(180deg,#0b1220,#10192b);
+    color:var(--text);
+  }
+
+  .wrap{
+    max-width:1100px;
+    margin:0 auto;
+    padding:24px 16px 40px;
+  }
+
+  h1{
+    margin:0 0 10px;
+    font-size:32px;
+  }
+
+  .subtitle{
+    color:var(--muted);
+    margin-bottom:20px;
+  }
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(12,1fr);
+    gap:16px;
+  }
+
+  .card{
+    grid-column:span 12;
+    background:linear-gradient(180deg,var(--card),var(--card2));
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:18px;
+    box-shadow:0 10px 30px rgba(0,0,0,.25);
+  }
+
+  .title{
+    font-size:20px;
+    font-weight:bold;
+    margin-bottom:14px;
+  }
+
+  .sensor-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:14px;
+  }
+
+  .sensor-box{
+    background:#0d1525;
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:18px;
+  }
+
+  .sensor-name{
+    color:var(--muted);
+    font-size:14px;
+    margin-bottom:10px;
+  }
+
+  .sensor-value{
+    font-size:38px;
+    font-weight:bold;
+  }
+
+  .status{
+    margin-top:8px;
+    font-size:14px;
+    font-weight:bold;
+  }
+
+  .safe{ color:var(--good); }
+  .warn{ color:var(--warn); }
+  .danger{ color:var(--danger); }
+
+  .control-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    justify-content:center;
+  }
+
+  button{
+    border:none;
+    border-radius:12px;
+    padding:12px 18px;
+    font-size:16px;
+    font-weight:bold;
+    cursor:pointer;
+    background:#2563eb;
+    color:white;
+    transition:.2s;
+  }
+
+  button:hover{
+    transform:translateY(-1px);
+    opacity:.95;
+  }
+
+  button.secondary{
+    background:#334155;
+  }
+
+  button.danger-btn{
+    background:#dc2626;
+  }
+
+  .relay-state{
+    font-size:40px;
+    font-weight:bold;
+    margin:10px 0 16px;
+  }
+
+  .chart-box{
+    background:#0d1525;
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:12px;
+  }
+
+  .footer-note{
+    margin-top:12px;
+    color:var(--muted);
+    font-size:13px;
+    line-height:1.6;
+  }
+
+  .badge{
+    display:inline-block;
+    padding:6px 10px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:bold;
+    margin-left:8px;
+  }
+
+  .badge-good{ background:rgba(45,212,191,.15); color:var(--good); }
+  .badge-warn{ background:rgba(250,204,21,.15); color:var(--warn); }
+  .badge-danger{ background:rgba(251,113,133,.15); color:var(--danger); }
+
+  .alert-banner{
+    display:none;
+    margin-bottom:16px;
+    padding:14px 16px;
+    border-radius:14px;
+    font-weight:bold;
+    background:rgba(251,113,133,.12);
+    color:var(--danger);
+    border:1px solid rgba(251,113,133,.35);
+  }
+
+  .show{ display:block; }
+
+  @media (max-width: 900px){
+    .sensor-grid{
+      grid-template-columns:1fr;
+    }
+    .sensor-value{
+      font-size:32px;
+    }
+    h1{
+      font-size:26px;
+    }
+  }
 </style>
 </head>
-
 <body>
 
-<div class="container">
+<div class="wrap">
+  <h1>智慧居家控制系統</h1>
+  <div class="subtitle">溫溼度、瓦斯監測、Relay 風扇 A、自動安全控制、紅外線風扇 B</div>
 
-<h1>智慧居家監控系統</h1>
+  <div id="alertBanner" class="alert-banner">🚨 瓦斯濃度過高，系統已進入警報狀態</div>
 
-<!-- 即時感測器 -->
-<div class="card">
-<h2>即時感測器數據</h2>
+  <div class="grid">
 
-<div class="row">
-  <div class="box">
-    溫度
-    <div id="temp" class="value">--</div>
+    <div class="card">
+      <div class="title">即時感測器數據</div>
+      <div class="sensor-grid">
+        <div class="sensor-box">
+          <div class="sensor-name">溫度</div>
+          <div id="temp" class="sensor-value">--</div>
+          <div id="tempStatus" class="status"></div>
+        </div>
+
+        <div class="sensor-box">
+          <div class="sensor-name">濕度</div>
+          <div id="humi" class="sensor-value">--</div>
+          <div class="status safe">正常監測中</div>
+        </div>
+
+        <div class="sensor-box">
+          <div class="sensor-name">瓦斯</div>
+          <div id="gas" class="sensor-value">--</div>
+          <div id="gasStatus" class="status"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="title">Relay 風扇 A 控制 <span class="badge badge-good">瓦斯安全聯動</span></div>
+      <div id="relayState" class="relay-state">讀取中...</div>
+      <div class="control-row">
+        <button onclick="setRelay(1)">開啟</button>
+        <button class="secondary" onclick="setRelay(0)">關閉</button>
+      </div>
+      <div class="footer-note">
+        風扇 A 為繼電器控制。當瓦斯濃度超過門檻時，MEGA 會自動強制開啟。
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="title">紅外線風扇 B 控制 <span class="badge badge-warn">IR 遙控</span></div>
+      <div class="control-row">
+        <button class="danger-btn" onclick="sendFan('OFF')">關</button>
+        <button onclick="sendFan('LOW')">弱</button>
+        <button onclick="sendFan('MID')">中</button>
+        <button onclick="sendFan('HIGH')">強</button>
+        <button class="secondary" onclick="sendFan('SWING')">轉</button>
+      </div>
+      <div class="footer-note">
+        風扇 B 為紅外線控制。按鍵送出後，ESP8266 會轉發給 MEGA，再由 YS-IRTM 發送紅外線碼。
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="title">最近 20 筆感測圖表</div>
+      <div class="chart-box">
+        <canvas id="chart" height="110"></canvas>
+      </div>
+      <div class="footer-note">
+        ThingSpeak 感測資料通道：3271973。控制命令通道：3277178。<br>
+        ThingSpeak 免費版有寫入頻率限制，連續控制命令請間隔約 15 秒以上。
+      </div>
+    </div>
+
   </div>
-
-  <div class="box">
-    濕度
-    <div id="humi" class="value">--</div>
-  </div>
-
-  <div class="box">
-    瓦斯
-    <div id="gas" class="value">--</div>
-  </div>
-</div>
-
-</div>
-
-<!-- 繼電器控制 -->
-<div class="card">
-<h2>繼電器控制</h2>
-
-<div id="relayState" class="value">讀取中...</div>
-<button id="toggleBtn">一鍵開關</button>
-
-<div class="small">
-命令來源：Channel 3277178 field1
-</div>
-
-</div>
-
-<!-- 歷史圖表 -->
-<div class="card">
-<h2>歷史圖表（最近 20 筆）</h2>
-
-<button id="resetViewBtn" class="danger">
-⟳ 清除歷史資料
-</button>
-
-<div class="small">
-僅重置顯示範圍為最近 20 筆，資料仍保留
-</div>
-
-溫度
-<iframe id="chartT"></iframe>
-
-濕度
-<iframe id="chartH"></iframe>
-
-瓦斯
-<iframe id="chartG"></iframe>
-
-</div>
-
 </div>
 
 <script>
-
-// ===== Channel A（感測器）=====
 const SENSOR_CHANNEL = 3271973;
-
-// ===== Channel B（繼電器）=====
 const CMD_CHANNEL = 3277178;
 const CMD_WRITE_KEY = "OIX0C2JRKET8RVKK";
 const CMD_READ_KEY  = "GXZB8HZNOGR3U2SH";
 
-// 讀感測器
-async function getSensors(){
+const TEMP_WARN = 35;
+const GAS_WARN = 350;
 
-  const url =
-  `https://api.thingspeak.com/channels/${SENSOR_CHANNEL}/feeds/last.json`;
-
-  const r = await fetch(url);
-  const j = await r.json();
-
-  document.getElementById("temp").innerHTML =
-    j.field1 ? j.field1 + " °C" : "--";
-
-  document.getElementById("humi").innerHTML =
-    j.field2 ? j.field2 + " %" : "--";
-
-  document.getElementById("gas").innerHTML =
-    j.field3 ? j.field3 : "--";
-}
-
-// 讀繼電器
-async function getRelay(){
-
-  const url =
-  `https://api.thingspeak.com/channels/${CMD_CHANNEL}/feeds/last.json?api_key=${CMD_READ_KEY}`;
-
-  const r = await fetch(url);
-  const j = await r.json();
-
-  const val = j.field1 === "1" ? 1 : 0;
-
-  renderRelay(val);
-}
-
-function renderRelay(v){
-
-  const el = document.getElementById("relayState");
-
-  if(v === 1){
-    el.innerHTML = "ON";
-    el.className = "value on";
-    document.getElementById("toggleBtn").innerText = "按一下 → 關";
-  }else{
-    el.innerHTML = "OFF";
-    el.className = "value off";
-    document.getElementById("toggleBtn").innerText = "按一下 → 開";
+// ===== 圖表 =====
+const ctx = document.getElementById('chart').getContext('2d');
+const chart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [
+      {
+        label: '溫度 °C',
+        data: [],
+        borderColor: '#2dd4bf',
+        backgroundColor: 'rgba(45,212,191,0.12)',
+        tension: 0.35,
+        fill: false
+      },
+      {
+        label: '瓦斯',
+        data: [],
+        borderColor: '#fb7185',
+        backgroundColor: 'rgba(251,113,133,0.12)',
+        tension: 0.35,
+        fill: false
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: {
+        labels: { color: '#eef4ff' }
+      }
+    },
+    scales: {
+      x: {
+        ticks: { color: '#eef4ff' },
+        grid: { color: 'rgba(255,255,255,0.06)' }
+      },
+      y: {
+        ticks: { color: '#eef4ff' },
+        grid: { color: 'rgba(255,255,255,0.06)' }
+      }
+    }
   }
-
-  window.currentRelay = v;
-}
-
-// 切換Relay
-async function toggleRelay(){
-
-  const next = window.currentRelay === 1 ? 0 : 1;
-
-  const url =
-  `https://api.thingspeak.com/update?api_key=${CMD_WRITE_KEY}&field1=${next}`;
-
-  const r = await fetch(url);
-  const result = await r.text();
-
-  if(result === "0"){
-    alert("請間隔 15 秒以上再操作");
-  }
-
-  setTimeout(getRelay, 1500);
-}
-
-// 圖表控制
-function setChartsResults(n){
-
-  const base =
-  `https://thingspeak.com/channels/${SENSOR_CHANNEL}/charts/`;
-
-  document.getElementById("chartT").src =
-    `${base}1?dynamic=true&results=${n}`;
-
-  document.getElementById("chartH").src =
-    `${base}2?dynamic=true&results=${n}`;
-
-  document.getElementById("chartG").src =
-    `${base}3?dynamic=true&results=${n}`;
-}
-
-// 偽清除
-document.getElementById("resetViewBtn")
-.addEventListener("click", () => {
-
-  setChartsResults(1);
-
-  setTimeout(()=>setChartsResults(20),1000);
 });
 
-// 事件
-document.getElementById("toggleBtn")
-.addEventListener("click", toggleRelay);
+// ===== 感測器 =====
+async function getSensors() {
+  const url = `https://api.thingspeak.com/channels/${SENSOR_CHANNEL}/feeds.json?results=20`;
+  const res = await fetch(url);
+  const data = await res.json();
 
-// 初始化
-setChartsResults(20);
+  const feeds = data.feeds || [];
+  if (!feeds.length) return;
+
+  const last = feeds[feeds.length - 1];
+  const temp = parseFloat(last.field1);
+  const humi = parseFloat(last.field2);
+  const gas = parseInt(last.field3);
+
+  document.getElementById('temp').textContent = isNaN(temp) ? '--' : `${temp} °C`;
+  document.getElementById('humi').textContent = isNaN(humi) ? '--' : `${humi} %`;
+  document.getElementById('gas').textContent = isNaN(gas) ? '--' : gas;
+
+  const tempStatus = document.getElementById('tempStatus');
+  if (!isNaN(temp) && temp > TEMP_WARN) {
+    tempStatus.textContent = '⚠ 溫度過高';
+    tempStatus.className = 'status warn';
+  } else {
+    tempStatus.textContent = '正常監測中';
+    tempStatus.className = 'status safe';
+  }
+
+  const gasStatus = document.getElementById('gasStatus');
+  const alertBanner = document.getElementById('alertBanner');
+  if (!isNaN(gas) && gas >= GAS_WARN) {
+    gasStatus.textContent = '🚨 瓦斯超標';
+    gasStatus.className = 'status danger';
+    alertBanner.classList.add('show');
+  } else {
+    gasStatus.textContent = '安全範圍';
+    gasStatus.className = 'status safe';
+    alertBanner.classList.remove('show');
+  }
+
+  chart.data.labels = feeds.map((_, i) => i + 1);
+  chart.data.datasets[0].data = feeds.map(f => Number(f.field1));
+  chart.data.datasets[1].data = feeds.map(f => Number(f.field3));
+  chart.update();
+}
+
+// ===== Relay 狀態 =====
+async function getRelayState() {
+  const url = `https://api.thingspeak.com/channels/${CMD_CHANNEL}/feeds/last.json?api_key=${CMD_READ_KEY}`;
+  const res = await fetch(url);
+  const data = await res.json();
+
+  const relay = data.field1 === "1" ? 1 : 0;
+  const relayState = document.getElementById('relayState');
+
+  if (relay === 1) {
+    relayState.textContent = 'ON';
+    relayState.className = 'relay-state safe';
+  } else {
+    relayState.textContent = 'OFF';
+    relayState.className = 'relay-state danger';
+  }
+
+  window.currentRelay = relay;
+}
+
+// ===== Relay 控制 =====
+async function setRelay(value) {
+  const url = `https://api.thingspeak.com/update?api_key=${CMD_WRITE_KEY}&field1=${value}`;
+  const res = await fetch(url);
+  const result = await res.text();
+
+  if (result === "0") {
+    alert("ThingSpeak 寫入失敗，請間隔 15 秒以上再操作");
+  } else {
+    setTimeout(getRelayState, 1500);
+  }
+}
+
+// ===== 風扇 B 紅外線控制 =====
+async function sendFan(mode) {
+  const url = `https://api.thingspeak.com/update?api_key=${CMD_WRITE_KEY}&field2=${mode}`;
+  const res = await fetch(url);
+  const result = await res.text();
+
+  if (result === "0") {
+    alert("ThingSpeak 寫入失敗，請間隔 15 秒以上再操作");
+  } else {
+    alert(`已送出紅外線命令：${mode}`);
+  }
+}
+
+// ===== 自動更新 =====
 getSensors();
-getRelay();
+getRelayState();
 
-// 每 5 秒更新
-setInterval(getSensors,5000);
-setInterval(getRelay,5000);
-
+setInterval(getSensors, 5000);
+setInterval(getRelayState, 5000);
 </script>
 
 </body>
