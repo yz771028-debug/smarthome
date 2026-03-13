@@ -150,19 +150,6 @@
     line-height:1.6;
   }
 
-  .badge{
-    display:inline-block;
-    padding:6px 10px;
-    border-radius:999px;
-    font-size:12px;
-    font-weight:bold;
-    margin-left:8px;
-  }
-
-  .badge-good{ background:rgba(45,212,191,.15); color:var(--good); }
-  .badge-warn{ background:rgba(250,204,21,.15); color:var(--warn); }
-  .badge-danger{ background:rgba(251,113,133,.15); color:var(--danger); }
-
   .alert-banner{
     display:none;
     margin-bottom:16px;
@@ -223,28 +210,22 @@
     </div>
 
     <div class="card">
-      <div class="title">Relay 風扇 A 控制 <span class="badge badge-good">瓦斯安全聯動</span></div>
+      <div class="title">Relay 風扇 A 控制</div>
       <div id="relayState" class="relay-state">讀取中...</div>
       <div class="control-row">
         <button onclick="setRelay(1)">開啟</button>
         <button class="secondary" onclick="setRelay(0)">關閉</button>
       </div>
-      <div class="footer-note">
-        風扇 A 為繼電器控制。當瓦斯濃度超過門檻時，MEGA 會自動強制開啟。
-      </div>
     </div>
 
     <div class="card">
-      <div class="title">紅外線風扇 B 控制 <span class="badge badge-warn">IR 遙控</span></div>
+      <div class="title">紅外線風扇 B 控制</div>
       <div class="control-row">
         <button class="danger-btn" onclick="sendFan('OFF')">關</button>
         <button onclick="sendFan('LOW')">弱</button>
         <button onclick="sendFan('MID')">中</button>
         <button onclick="sendFan('HIGH')">強</button>
         <button class="secondary" onclick="sendFan('SWING')">轉</button>
-      </div>
-      <div class="footer-note">
-        風扇 B 為紅外線控制。ESP8266 會把指令轉給 MEGA，再由 YS-IRTM 發送紅外線碼。
       </div>
     </div>
 
@@ -254,9 +235,7 @@
         <canvas id="chart" height="110"></canvas>
       </div>
       <div class="footer-note">
-        感測器 Channel：3271973<br>
-        命令 Channel：3277178<br>
-        ThingSpeak 免費版控制寫入請間隔約 15 秒以上。
+        ThingSpeak 免費版控制寫入請間隔 15 秒以上。
       </div>
     </div>
 
@@ -272,7 +251,7 @@ const CMD_READ_KEY  = "GXZB8HZNOGR3U2SH";
 const TEMP_WARN = 35;
 const GAS_WARN = 350;
 
-// ===== 命令狀態快取：每次寫入都同時帶上 =====
+// 永遠保存目前命令狀態
 let currentRelayCmd = "0";
 let currentFanCmd = "OFF";
 
@@ -366,31 +345,28 @@ async function getSensors() {
   chart.update();
 }
 
-// ===== 讀目前命令狀態 =====
+// ===== 讀目前控制狀態 =====
 async function getRelayState() {
   const url = `https://api.thingspeak.com/channels/${CMD_CHANNEL}/feeds/last.json?api_key=${CMD_READ_KEY}`;
   const res = await fetch(url);
   const data = await res.json();
 
   if (data.field1 !== null && data.field1 !== undefined) {
-    currentRelayCmd = data.field1;
+    currentRelayCmd = String(data.field1);
   }
   if (data.field2 !== null && data.field2 !== undefined) {
-    currentFanCmd = data.field2;
+    currentFanCmd = String(data.field2);
   }
 
-  const relay = currentRelayCmd === "1" ? 1 : 0;
   const relayState = document.getElementById('relayState');
 
-  if (relay === 1) {
+  if (currentRelayCmd === "1") {
     relayState.textContent = 'ON';
     relayState.className = 'relay-state safe';
   } else {
     relayState.textContent = 'OFF';
     relayState.className = 'relay-state danger';
   }
-
-  window.currentRelay = relay;
 }
 
 // ===== 核心：每次都同時寫 field1 + field2 =====
@@ -400,8 +376,12 @@ async function writeCommand(relayValue, fanValue) {
     `&field1=${encodeURIComponent(relayValue)}` +
     `&field2=${encodeURIComponent(fanValue)}`;
 
+  console.log("WRITE URL =", url);
+
   const res = await fetch(url);
   const result = await res.text();
+
+  console.log("ThingSpeak result =", result);
 
   if (result === "0") {
     alert("ThingSpeak 寫入失敗，請間隔 15 秒以上再操作");
@@ -410,16 +390,14 @@ async function writeCommand(relayValue, fanValue) {
   return true;
 }
 
-// ===== Relay 控制 =====
+// ===== Relay =====
 async function setRelay(value) {
   currentRelayCmd = String(value);
   const ok = await writeCommand(currentRelayCmd, currentFanCmd);
-  if (ok) {
-    setTimeout(getRelayState, 1500);
-  }
+  if (ok) setTimeout(getRelayState, 1500);
 }
 
-// ===== 風扇 B 控制 =====
+// ===== IR Fan =====
 async function sendFan(mode) {
   currentFanCmd = mode;
   const ok = await writeCommand(currentRelayCmd, currentFanCmd);
