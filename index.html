@@ -147,7 +147,7 @@
 
 <div class="wrap">
   <h1>智慧居家控制系統</h1>
-  <div class="subtitle">3 Channel 最穩定版</div>
+  <div class="subtitle">最終正式版（支援文字與數字指令）</div>
 
   <div id="alertBanner" class="alert-banner">🚨 瓦斯濃度過高，系統已進入警報狀態</div>
 
@@ -292,7 +292,8 @@ async function getRelayState() {
   const res = await fetch(url);
   const data = await res.json();
 
-  const relay = data.field1 === "1" ? 1 : 0;
+  const v = String(data.field1 || "").toUpperCase();
+  const relay = (v === "1" || v === "ON" || v === "HIGH") ? 1 : 0;
   const relayState = document.getElementById('relayState');
 
   if (relay === 1) {
@@ -304,28 +305,31 @@ async function getRelayState() {
   }
 }
 
-async function setRelay(value) {
-  const url = `https://api.thingspeak.com/update?api_key=${RELAY_WRITE_KEY}&field1=${value}`;
+async function writeThingSpeak(apiKey, value, label) {
+  const url = `https://api.thingspeak.com/update?api_key=${apiKey}&field1=${encodeURIComponent(value)}`;
   const res = await fetch(url);
   const result = await res.text();
 
   if (result === "0") {
-    alert("Relay Channel 寫入失敗，請等 15 秒再試");
+    alert(`${label} 寫入失敗，請等 15 秒再試`);
   } else {
-    setTimeout(getRelayState, 1500);
+    alert(`${label} 已送出：${value}`);
   }
 }
 
-async function sendFan(cmd) {
-  const url = `https://api.thingspeak.com/update?api_key=${IR_WRITE_KEY}&field1=${cmd}`;
-  const res = await fetch(url);
-  const result = await res.text();
+async function setRelay(value) {
+  await writeThingSpeak(RELAY_WRITE_KEY, value, "Relay 指令");
+  setTimeout(getRelayState, 1500);
+}
 
-  if (result === "0") {
-    alert("IR Channel 寫入失敗，請等 15 秒再試");
-  } else {
-    alert("已送出 IR 命令：" + cmd);
-  }
+// 預設送數字 1~5
+async function sendFan(cmd) {
+  await writeThingSpeak(IR_WRITE_KEY, cmd, "IR 指令");
+}
+
+// 需要時也可改送文字
+async function sendFanText(cmdText) {
+  await writeThingSpeak(IR_WRITE_KEY, cmdText, "IR 文字指令");
 }
 
 getSensors();
