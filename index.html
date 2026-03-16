@@ -147,7 +147,7 @@
 
 <div class="wrap">
   <h1>智慧居家控制系統</h1>
-  <div class="subtitle">3 Channel 版</div>
+  <div class="subtitle">3 Channel 最穩定版</div>
 
   <div id="alertBanner" class="alert-banner">🚨 瓦斯濃度過高，系統已進入警報狀態</div>
 
@@ -188,11 +188,11 @@
     <div class="card">
       <div class="title">紅外線風扇 B 控制</div>
       <div class="control-row">
-        <button onclick="sendFan('OFF')">關</button>
-        <button onclick="sendFan('LOW')">弱</button>
-        <button onclick="sendFan('MID')">中</button>
-        <button onclick="sendFan('HIGH')">強</button>
-        <button onclick="sendFan('SWING')">轉</button>
+        <button onclick="sendFan(1)">關</button>
+        <button onclick="sendFan(2)">弱</button>
+        <button onclick="sendFan(3)">中</button>
+        <button onclick="sendFan(4)">強</button>
+        <button onclick="sendFan(5)">轉</button>
       </div>
     </div>
 
@@ -310,21 +310,21 @@ async function setRelay(value) {
   const result = await res.text();
 
   if (result === "0") {
-    alert("Relay Channel 寫入失敗，請稍後再試");
+    alert("Relay Channel 寫入失敗，請等 15 秒再試");
   } else {
     setTimeout(getRelayState, 1500);
   }
 }
 
-async function sendFan(mode) {
-  const url = `https://api.thingspeak.com/update?api_key=${IR_WRITE_KEY}&field1=${mode}`;
+async function sendFan(cmd) {
+  const url = `https://api.thingspeak.com/update?api_key=${IR_WRITE_KEY}&field1=${cmd}`;
   const res = await fetch(url);
   const result = await res.text();
 
   if (result === "0") {
-    alert("IR Channel 寫入失敗，請稍後再試");
+    alert("IR Channel 寫入失敗，請等 15 秒再試");
   } else {
-    alert(`已送出 IR 命令：${mode}`);
+    alert("已送出 IR 命令：" + cmd);
   }
 }
 
