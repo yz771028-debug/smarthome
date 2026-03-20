@@ -338,6 +338,29 @@ getRelayState();
 setInterval(getSensors, 5000);
 setInterval(getRelayState, 5000);
 </script>
+<div id="alarm" style="font-size:30px;">狀態讀取中...</div>
 
+<script>
+async function getData() {
+  let url = "https://api.thingspeak.com/channels/你的ID/feeds/last.json";
+  let res = await fetch(url);
+  let data = await res.json();
+
+  let gas = data.field3;
+  let alarm = data.field4;
+
+  document.getElementById("gas").innerText = gas;
+
+  if (alarm == 1) {
+    document.getElementById("alarm").innerHTML = "🚨 瓦斯超標！";
+    document.getElementById("alarm").style.color = "red";
+  } else {
+    document.getElementById("alarm").innerHTML = "✅ 正常";
+    document.getElementById("alarm").style.color = "green";
+  }
+}
+
+setInterval(getData, 3000);
+</script>
 </body>
 </html>
