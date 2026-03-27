@@ -17,38 +17,31 @@
     --warn:#facc15;
     --danger:#fb7185;
   }
-
   *{box-sizing:border-box}
-
   body{
     margin:0;
     font-family:Arial,"Microsoft JhengHei",sans-serif;
     background:linear-gradient(180deg,#0b1220,#10192b);
     color:var(--text);
   }
-
   .wrap{
     max-width:1100px;
     margin:0 auto;
     padding:24px 16px 40px;
   }
-
   h1{
     margin:0 0 10px;
     font-size:32px;
   }
-
   .subtitle{
     color:var(--muted);
     margin-bottom:20px;
   }
-
   .grid{
     display:grid;
     grid-template-columns:repeat(12,1fr);
     gap:16px;
   }
-
   .card{
     grid-column:span 12;
     background:linear-gradient(180deg,var(--card),var(--card2));
@@ -57,54 +50,45 @@
     padding:18px;
     box-shadow:0 10px 30px rgba(0,0,0,.25);
   }
-
   .title{
     font-size:20px;
     font-weight:bold;
     margin-bottom:14px;
   }
-
   .sensor-grid{
     display:grid;
     grid-template-columns:repeat(3,1fr);
     gap:14px;
   }
-
   .sensor-box{
     background:#0d1525;
     border:1px solid var(--line);
     border-radius:16px;
     padding:18px;
   }
-
   .sensor-name{
     color:var(--muted);
     font-size:14px;
     margin-bottom:10px;
   }
-
   .sensor-value{
     font-size:38px;
     font-weight:bold;
   }
-
   .status{
     margin-top:8px;
     font-size:14px;
     font-weight:bold;
   }
-
   .safe{ color:var(--good); }
   .warn{ color:var(--warn); }
   .danger{ color:var(--danger); }
-
   .control-row{
     display:flex;
     flex-wrap:wrap;
     gap:10px;
     justify-content:center;
   }
-
   button{
     border:none;
     border-radius:12px;
@@ -115,20 +99,17 @@
     background:#2563eb;
     color:white;
   }
-
   .relay-state{
     font-size:40px;
     font-weight:bold;
     margin:10px 0 16px;
   }
-
   .chart-box{
     background:#0d1525;
     border:1px solid var(--line);
     border-radius:16px;
     padding:12px;
   }
-
   .alert-banner{
     display:none;
     margin-bottom:16px;
@@ -139,7 +120,6 @@
     color:var(--danger);
     border:1px solid rgba(251,113,133,.35);
   }
-
   .show{ display:block; }
 </style>
 </head>
@@ -188,11 +168,10 @@
     <div class="card">
       <div class="title">紅外線風扇 B 控制</div>
       <div class="control-row">
-        <button onclick="sendFan(1)">關</button>
-        <button onclick="sendFan(2)">弱</button>
-        <button onclick="sendFan(3)">中</button>
-        <button onclick="sendFan(4)">強</button>
-        <button onclick="sendFan(5)">轉</button>
+        <button onclick="sendFan(1)">開/關</button>
+        <button onclick="sendFan(2)">風量+</button>
+        <button onclick="sendFan(3)">風量-</button>
+        <button onclick="sendFan(4)">擺頭</button>
       </div>
     </div>
 
@@ -221,6 +200,12 @@ const IR_WRITE_KEY = "QQF8NVXGW6D8DKCM";
 const TEMP_WARN = 35;
 const GAS_WARN = 350;
 
+function safeNumber(v) {
+  if (v === null || v === undefined || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
+}
+
 const ctx = document.getElementById('chart').getContext('2d');
 const chart = new Chart(ctx, {
   type: 'line',
@@ -244,47 +229,60 @@ const chart = new Chart(ctx, {
 });
 
 async function getSensors() {
-  const url = `https://api.thingspeak.com/channels/${SENSOR_CHANNEL}/feeds.json?results=20`;
-  const res = await fetch(url);
-  const data = await res.json();
+  try {
+    const url = `https://api.thingspeak.com/channels/${SENSOR_CHANNEL}/feeds.json?results=20`;
+    const res = await fetch(url, { cache: "no-store" });
+    const data = await res.json();
 
-  const feeds = data.feeds || [];
-  if (!feeds.length) return;
+    const feeds = Array.isArray(data.feeds) ? data.feeds : [];
+    if (!feeds.length) return;
 
-  const last = feeds[feeds.length - 1];
-  const temp = parseFloat(last.field1);
-  const humi = parseFloat(last.field2);
-  const gas = parseInt(last.field3);
+    const last = feeds[feeds.length - 1];
+    const temp = safeNumber(last.field1);
+    const humi = safeNumber(last.field2);
+    const gas  = safeNumber(last.field3);
 
-  document.getElementById('temp').textContent = isNaN(temp) ? '--' : `${temp} °C`;
-  document.getElementById('humi').textContent = isNaN(humi) ? '--' : `${humi} %`;
-  document.getElementById('gas').textContent = isNaN(gas) ? '--' : gas;
+    document.getElementById('temp').textContent =
+      temp === null ? '--' : `${temp.toFixed(1)} °C`;
 
-  const tempStatus = document.getElementById('tempStatus');
-  if (!isNaN(temp) && temp > TEMP_WARN) {
-    tempStatus.textContent = '⚠ 溫度過高';
-    tempStatus.className = 'status warn';
-  } else {
-    tempStatus.textContent = '正常監測中';
-    tempStatus.className = 'status safe';
+    document.getElementById('humi').textContent =
+      humi === null ? '--' : `${humi.toFixed(1)} %`;
+
+    document.getElementById('gas').textContent =
+      gas === null ? '--' : `${gas}`;
+
+    const tempStatus = document.getElementById('tempStatus');
+    if (temp !== null && temp > TEMP_WARN) {
+      tempStatus.textContent = '⚠ 溫度過高';
+      tempStatus.className = 'status warn';
+    } else {
+      tempStatus.textContent = '正常監測中';
+      tempStatus.className = 'status safe';
+    }
+
+    const gasStatus = document.getElementById('gasStatus');
+    const alertBanner = document.getElementById('alertBanner');
+    if (gas !== null && gas >= GAS_WARN) {
+      gasStatus.textContent = '🚨 瓦斯超標';
+      gasStatus.className = 'status danger';
+      alertBanner.classList.add('show');
+    } else if (gas !== null) {
+      gasStatus.textContent = '安全範圍';
+      gasStatus.className = 'status safe';
+      alertBanner.classList.remove('show');
+    } else {
+      gasStatus.textContent = '等待資料';
+      gasStatus.className = 'status warn';
+      alertBanner.classList.remove('show');
+    }
+
+    chart.data.labels = feeds.map((_, i) => i + 1);
+    chart.data.datasets[0].data = feeds.map(f => safeNumber(f.field1));
+    chart.data.datasets[1].data = feeds.map(f => safeNumber(f.field3));
+    chart.update();
+  } catch (e) {
+    console.log("getSensors error:", e);
   }
-
-  const gasStatus = document.getElementById('gasStatus');
-  const alertBanner = document.getElementById('alertBanner');
-  if (!isNaN(gas) && gas >= GAS_WARN) {
-    gasStatus.textContent = '🚨 瓦斯超標';
-    gasStatus.className = 'status danger';
-    alertBanner.classList.add('show');
-  } else {
-    gasStatus.textContent = '安全範圍';
-    gasStatus.className = 'status safe';
-    alertBanner.classList.remove('show');
-  }
-
-  chart.data.labels = feeds.map((_, i) => i + 1);
-  chart.data.datasets[0].data = feeds.map(f => Number(f.field1));
-  chart.data.datasets[1].data = feeds.map(f => Number(f.field3));
-  chart.update();
 }
 
 async function getRelayState() {
