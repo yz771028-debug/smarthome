@@ -127,7 +127,7 @@
 
 <div class="wrap">
   <h1>智慧居家控制系統</h1>
-  <div class="subtitle">3 Channel 最穩定版</div>
+  <div class="subtitle">3 Channel 最終版</div>
 
   <div id="alertBanner" class="alert-banner">🚨 瓦斯濃度過高，系統已進入警報狀態</div>
 
@@ -200,6 +200,8 @@ const IR_WRITE_KEY = "QQF8NVXGW6D8DKCM";
 
 const TEMP_WARN = 35;
 const GAS_WARN = 350;
+
+let irCounter = 0;
 
 function safeNumber(v) {
   if (v === null || v === undefined || v === "") return null;
@@ -315,7 +317,16 @@ async function setRelay(value) {
   }
 }
 
-async function sendFan(cmd) {
+// baseCmd:
+// 1=開
+// 2=關
+// 3=風量+
+// 4=風量-
+// 5=擺頭
+async function sendFan(baseCmd) {
+  irCounter = (irCounter + 1) % 10;
+  const cmd = String(baseCmd) + String(irCounter);
+
   const url = `https://api.thingspeak.com/update?api_key=${IR_WRITE_KEY}&field1=${cmd}`;
   const res = await fetch(url);
   const result = await res.text();
