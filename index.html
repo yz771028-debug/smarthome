@@ -127,9 +127,9 @@
 
 <div class="wrap">
   <h1>智慧居家控制系統</h1>
-  <div class="subtitle">3 Channel 最終版</div>
+  <div class="subtitle">溫溼度、瓦斯監測、Relay 風扇 A、紅外線風扇 B、蜂鳴器警報</div>
 
-  <div id="alertBanner" class="alert-banner">🚨 瓦斯濃度過高，系統已進入警報狀態</div>
+  <div id="alertBanner" class="alert-banner">🚨 瓦斯濃度超過 350，系統已進入警報狀態</div>
 
   <div class="grid">
 
@@ -265,6 +265,7 @@ async function getSensors() {
 
     const gasStatus = document.getElementById('gasStatus');
     const alertBanner = document.getElementById('alertBanner');
+
     if (gas !== null && gas >= GAS_WARN) {
       gasStatus.textContent = '🚨 瓦斯超標';
       gasStatus.className = 'status danger';
