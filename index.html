@@ -121,11 +121,58 @@
     border:1px solid rgba(251,113,133,.35);
   }
   .show{ display:block; }
+  .login-screen{
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+  }
+  .login-card{
+    width:min(420px,100%);
+    background:linear-gradient(180deg,var(--card),var(--card2));
+    border:1px solid var(--line);
+    border-radius:18px;
+    padding:22px;
+    box-shadow:0 10px 30px rgba(0,0,0,.25);
+  }
+  .form-group{ margin-bottom:12px; }
+  label{ display:block; margin-bottom:6px; color:var(--muted); }
+  input{
+    width:100%;
+    border:1px solid var(--line);
+    border-radius:10px;
+    background:#0d1525;
+    color:var(--text);
+    padding:10px 12px;
+    font-size:15px;
+  }
+  .error-msg{
+    margin-top:10px;
+    color:var(--danger);
+    font-size:14px;
+    min-height:20px;
+  }
 </style>
 </head>
 <body>
 
-<div class="wrap">
+<div id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <h2>系統登入</h2>
+    <div class="subtitle">請輸入密碼後進入控制頁</div>
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="password">密碼</label>
+        <input id="password" type="password" autocomplete="current-password" required>
+      </div>
+      <button type="submit">登入</button>
+      <div id="loginError" class="error-msg"></div>
+    </form>
+  </div>
+</div>
+
+<div id="app" class="wrap" style="display:none;">
   <h1>智慧居家控制系統</h1>
   <div class="subtitle">溫溼度、瓦斯監測、Relay 風扇 A、紅外線風扇 B、蜂鳴器警報</div>
 
@@ -202,6 +249,10 @@ const TEMP_WARN = 35;
 const GAS_WARN = 350;
 
 let irCounter = 0;
+// 目前密碼明文: 123456
+// 想更換時，先產生 SHA-256 雜湊再替換下面常數
+const LOGIN_PASS_HASH = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92";
+const LOGIN_KEY = "smarthome_auth";
 
 function safeNumber(v) {
   if (v === null || v === undefined || v === "") return null;
@@ -339,11 +390,41 @@ async function sendFan(baseCmd) {
   }
 }
 
-getSensors();
-getRelayState();
+function unlockApp() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('app').style.display = 'block';
+  getSensors();
+  getRelayState();
+  setInterval(getSensors, 5000);
+  setInterval(getRelayState, 5000);
+}
 
-setInterval(getSensors, 5000);
-setInterval(getRelayState, 5000);
+async function sha256Hex(text) {
+  const encoded = new TextEncoder().encode(text);
+  const digest = await crypto.subtle.digest("SHA-256", encoded);
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+document.getElementById('loginForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const pass = document.getElementById('password').value;
+  const error = document.getElementById('loginError');
+  error.textContent = '';
+
+  const passHash = await sha256Hex(pass);
+  if (passHash === LOGIN_PASS_HASH) {
+    sessionStorage.setItem(LOGIN_KEY, '1');
+    unlockApp();
+  } else {
+    error.textContent = '密碼錯誤，請重新輸入。';
+  }
+});
+
+if (sessionStorage.getItem(LOGIN_KEY) === '1') {
+  unlockApp();
+}
 </script>
 
 </body>
