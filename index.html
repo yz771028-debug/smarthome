@@ -343,6 +343,9 @@ async function getSensors() {
 
     document.getElementById('gas').textContent =
       gas === null ? '--' : `${gas}`;
+const ACCOUNT_KEY = "smarthome_account";
+const DEFAULT_ACCOUNT = { username: "admin", password: "123456" };
+let memoryAccount = null;
 
     const tempStatus = document.getElementById('tempStatus');
     if (temp !== null && temp > TEMP_WARN) {
@@ -369,20 +372,18 @@ async function getSensors() {
       gasStatus.className = 'status warn';
       alertBanner.classList.remove('show');
     }
-
-    chart.data.labels = feeds.map((_, i) => i + 1);
-    chart.data.datasets[0].data = feeds.map(f => safeNumber(f.field1));
-    chart.data.datasets[1].data = feeds.map(f => safeNumber(f.field3));
-const ACCOUNT_KEY = "smarthome_account";
-const DEFAULT_ACCOUNT = { username: "admin", password: "123456" };
-let memoryAccount = null;
-
 function safeNumber(v){if(v===null||v===undefined||v==="")return null;const n=Number(v);return Number.isFinite(n)?n:null;}
 function setText(id, value, unit, digits){const el=document.getElementById(id);if(value===null){el.textContent='--';}else if(unit){el.textContent=`${value.toFixed(digits)} ${unit}`;}else{el.textContent=`${value.toFixed(digits)}`;}}
 function setGasStatus(id, gas){const el=document.getElementById(id);if(gas===null){el.textContent='等待資料';el.className='status warn';}else if(gas>=GAS_WARN){el.textContent='🚨 瓦斯超標';el.className='status danger';}else{el.textContent='安全範圍';el.className='status safe';}}
 
-const ctx=document.getElementById('chart').getContext('2d');
-const chart=new Chart(ctx,{type:'line',data:{labels:[],datasets:[{label:'房間1 瓦斯',data:[],borderColor:'#fb7185',tension:0.35},{label:'房間2 瓦斯',data:[],borderColor:'#2dd4bf',tension:0.35}]}});
+    chart.data.labels = feeds.map((_, i) => i + 1);
+    chart.data.datasets[0].data = feeds.map(f => safeNumber(f.field1));
+    chart.data.datasets[1].data = feeds.map(f => safeNumber(f.field3));
+var chartCtx = document.getElementById('chart').getContext('2d');
+if (window.__smarthomeChart) {
+  window.__smarthomeChart.destroy();
+}
+var chart = window.__smarthomeChart = new Chart(chartCtx,{type:'line',data:{labels:[],datasets:[{label:'房間1 瓦斯',data:[],borderColor:'#fb7185',tension:0.35},{label:'房間2 瓦斯',data:[],borderColor:'#2dd4bf',tension:0.35}]}});
 
 async function getSensors(){
   try{
