@@ -89,6 +89,12 @@
     gap:10px;
     justify-content:center;
   }
+  .topbar{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:14px;
+  }
   button{
     border:none;
     border-radius:12px;
@@ -137,6 +143,20 @@
     box-shadow:0 10px 30px rgba(0,0,0,.25);
   }
   .form-group{ margin-bottom:12px; }
+  .login-tabs{
+    display:flex;
+    gap:8px;
+    margin:8px 0 14px;
+  }
+  .tab-btn{
+    flex:1;
+    background:#1d4ed8;
+    opacity:.75;
+  }
+  .tab-btn.active{
+    opacity:1;
+    outline:2px solid #60a5fa;
+  }
   label{ display:block; margin-bottom:6px; color:var(--muted); }
   input{
     width:100%;
@@ -160,20 +180,45 @@
 <div id="loginScreen" class="login-screen">
   <div class="login-card">
     <h2>系統登入</h2>
-    <div class="subtitle">請輸入密碼後進入控制頁</div>
+    <div class="subtitle">可先註冊帳號與自訂密碼，再登入系統</div>
+    <div class="login-tabs">
+      <button id="showLoginTab" type="button" class="tab-btn active">登入</button>
+      <button id="showRegisterTab" type="button" class="tab-btn">註冊</button>
+    </div>
+
     <form id="loginForm">
       <div class="form-group">
-        <label for="password">密碼</label>
-        <input id="password" type="password" autocomplete="current-password" required>
+        <label for="loginUsername">帳號</label>
+        <input id="loginUsername" type="text" autocomplete="username" required>
+      </div>
+      <div class="form-group">
+        <label for="loginPassword">密碼</label>
+        <input id="loginPassword" type="password" autocomplete="current-password" required>
       </div>
       <button type="submit">登入</button>
       <div id="loginError" class="error-msg"></div>
+    </form>
+
+    <form id="registerForm" style="display:none;">
+      <div class="form-group">
+        <label for="registerUsername">新帳號</label>
+        <input id="registerUsername" type="text" autocomplete="username" required>
+      </div>
+      <div class="form-group">
+        <label for="registerPassword">新密碼</label>
+        <input id="registerPassword" type="password" autocomplete="new-password" required>
+      </div>
+      <button type="submit">建立帳號</button>
+      <div id="registerError" class="error-msg"></div>
     </form>
   </div>
 </div>
 
 <div id="app" class="wrap" style="display:none;">
-  <h1>智慧居家控制系統</h1>
+  <div class="topbar">
+    <h1>智慧居家控制系統</h1>
+    <button id="logoutBtn" type="button">登出</button>
+  </div>
   <div class="subtitle">溫溼度、瓦斯監測、Relay 風扇 A、紅外線風扇 B、蜂鳴器警報</div>
 
   <div id="alertBanner" class="alert-banner">🚨 瓦斯濃度超過 350，系統已進入警報狀態</div>
@@ -249,10 +294,11 @@ const TEMP_WARN = 35;
 const GAS_WARN = 350;
 
 let irCounter = 0;
-// 目前密碼明文: 123456
-// 想更換時，先產生 SHA-256 雜湊再替換下面常數
-const LOGIN_PASS_HASH = "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92";
-const LOGIN_KEY = "smarthome_auth";
+const ACCOUNT_KEY = "smarthome_account";
+const DEFAULT_ACCOUNT = {
+  username: "admin",
+  passHash: "8d969eef6ecad3c29a3a629280e686cf0c3f5d5a86aff3ca12020c923adc6c92" // 123456
+};
 
 function safeNumber(v) {
   if (v === null || v === undefined || v === "") return null;
@@ -407,24 +453,72 @@ async function sha256Hex(text) {
     .join("");
 }
 
+function getAccount() {
+  const raw = localStorage.getItem(ACCOUNT_KEY);
+  if (!raw) return DEFAULT_ACCOUNT;
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && parsed.username && parsed.passHash) return parsed;
+  } catch (e) {
+    console.log("account parse error:", e);
+  }
+  return DEFAULT_ACCOUNT;
+}
+
+function setTab(mode) {
+  const isLogin = mode === 'login';
+  document.getElementById('loginForm').style.display = isLogin ? 'block' : 'none';
+  document.getElementById('registerForm').style.display = isLogin ? 'none' : 'block';
+  document.getElementById('showLoginTab').classList.toggle('active', isLogin);
+  document.getElementById('showRegisterTab').classList.toggle('active', !isLogin);
+}
+
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const pass = document.getElementById('password').value;
+  const user = document.getElementById('loginUsername').value.trim();
+  const pass = document.getElementById('loginPassword').value;
   const error = document.getElementById('loginError');
   error.textContent = '';
 
+  const account = getAccount();
   const passHash = await sha256Hex(pass);
-  if (passHash === LOGIN_PASS_HASH) {
-    sessionStorage.setItem(LOGIN_KEY, '1');
+  if (user === account.username && passHash === account.passHash) {
     unlockApp();
   } else {
-    error.textContent = '密碼錯誤，請重新輸入。';
+    error.textContent = '帳號或密碼錯誤，請重新輸入。';
   }
 });
 
-if (sessionStorage.getItem(LOGIN_KEY) === '1') {
-  unlockApp();
-}
+document.getElementById('registerForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const user = document.getElementById('registerUsername').value.trim();
+  const pass = document.getElementById('registerPassword').value;
+  const msg = document.getElementById('registerError');
+  msg.style.color = '#fb7185';
+  msg.textContent = '';
+
+  if (user.length < 3) {
+    msg.textContent = '帳號至少需要 3 個字元。';
+    return;
+  }
+  if (pass.length < 6) {
+    msg.textContent = '密碼至少需要 6 個字元。';
+    return;
+  }
+
+  const passHash = await sha256Hex(pass);
+  localStorage.setItem(ACCOUNT_KEY, JSON.stringify({ username: user, passHash }));
+  msg.style.color = '#2dd4bf';
+  msg.textContent = '註冊成功，請切換到登入頁登入。';
+  document.getElementById('registerForm').reset();
+});
+
+document.getElementById('showLoginTab').addEventListener('click', () => setTab('login'));
+document.getElementById('showRegisterTab').addEventListener('click', () => setTab('register'));
+
+document.getElementById('logoutBtn').addEventListener('click', () => {
+  location.reload();
+});
 </script>
 
 </body>
