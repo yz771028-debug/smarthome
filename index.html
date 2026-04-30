@@ -297,35 +297,6 @@ function safeNumber(v) {
   if (v === null || v === undefined || v === "") return null;
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
-const ACCOUNT_KEY = "smarthome_account";
-const DEFAULT_ACCOUNT = { username: "admin", password: "123456" };
-let memoryAccount = null;
-
-function safeNumber(v){if(v===null||v===undefined||v==="")return null;const n=Number(v);return Number.isFinite(n)?n:null;}
-function setText(id, value, unit, digits){const el=document.getElementById(id);if(value===null){el.textContent='--';}else if(unit){el.textContent=`${value.toFixed(digits)} ${unit}`;}else{el.textContent=`${value.toFixed(digits)}`;}}
-function setGasStatus(id, gas){const el=document.getElementById(id);if(gas===null){el.textContent='等待資料';el.className='status warn';}else if(gas>=GAS_WARN){el.textContent='🚨 瓦斯超標';el.className='status danger';}else{el.textContent='安全範圍';el.className='status safe';}}
-
-const ctx=document.getElementById('chart').getContext('2d');
-const chart=new Chart(ctx,{type:'line',data:{labels:[],datasets:[{label:'房間1 瓦斯',data:[],borderColor:'#fb7185',tension:0.35},{label:'房間2 瓦斯',data:[],borderColor:'#2dd4bf',tension:0.35}]}});
-
-async function getSensors(){
-  try{
-    const url=`https://api.thingspeak.com/channels/${SENSOR_CHANNEL}/feeds.json?results=20`;
-    const res=await fetch(url,{cache:'no-store'});const data=await res.json();
-    const feeds=Array.isArray(data.feeds)?data.feeds:[];if(!feeds.length)return;
-    const last=feeds[feeds.length-1];
-    const r1t=safeNumber(last.field1), r1h=safeNumber(last.field2), r1g=safeNumber(last.field3);
-    const r2t=safeNumber(last.field4), r2h=safeNumber(last.field5), r2g=safeNumber(last.field6);
-    setText('r1temp',r1t,'°C',1); setText('r1humi',r1h,'%',1); setText('r1gas',r1g,'',0);
-    setText('r2temp',r2t,'°C',1); setText('r2humi',r2h,'%',1); setText('r2gas',r2g,'',0);
-    setGasStatus('r1gasStatus',r1g); setGasStatus('r2gasStatus',r2g);
-    const alertBanner=document.getElementById('alertBanner');
-    if((r1g!==null&&r1g>=GAS_WARN)||(r2g!==null&&r2g>=GAS_WARN)) alertBanner.classList.add('show'); else alertBanner.classList.remove('show');
-    chart.data.labels=feeds.map((_,i)=>i+1);
-    chart.data.datasets[0].data=feeds.map(f=>safeNumber(f.field3));
-    chart.data.datasets[1].data=feeds.map(f=>safeNumber(f.field6));
-    chart.update();
-  }catch(e){console.log('getSensors error:',e);}
 }
 
 const ctx = document.getElementById('chart').getContext('2d');
@@ -372,13 +343,6 @@ async function getSensors() {
 
     document.getElementById('gas').textContent =
       gas === null ? '--' : `${gas}`;
-async function getRelayState(){
-  const url=`https://api.thingspeak.com/channels/${RELAY_CHANNEL}/feeds/last.json?api_key=${RELAY_READ_KEY}`;
-  const res=await fetch(url); const data=await res.json();
-  const relay=data.field1==="1"?1:0; const relayState=document.getElementById('relayState');
-  if(relay===1){relayState.textContent='ON';relayState.className='relay-state safe';}
-  else{relayState.textContent='OFF';relayState.className='relay-state danger';}
-}
 
     const tempStatus = document.getElementById('tempStatus');
     if (temp !== null && temp > TEMP_WARN) {
@@ -388,20 +352,9 @@ async function getRelayState(){
       tempStatus.textContent = '正常監測中';
       tempStatus.className = 'status safe';
     }
-async function setRelay(value){
-  const url=`https://api.thingspeak.com/update?api_key=${RELAY_WRITE_KEY}&field1=${value}`;
-  const res=await fetch(url); const result=await res.text();
-  if(result==="0") alert("Relay Channel 寫入失敗，請等 15 秒再試"); else setTimeout(getRelayState,1500);
-}
 
     const gasStatus = document.getElementById('gasStatus');
     const alertBanner = document.getElementById('alertBanner');
-async function sendFan(baseCmd){
-  irCounter=(irCounter+1)%10; const cmd=String(baseCmd)+String(irCounter);
-  const url=`https://api.thingspeak.com/update?api_key=${IR_WRITE_KEY}&field1=${cmd}`;
-  const res=await fetch(url); const result=await res.text();
-  if(result==="0") alert("IR Channel 寫入失敗，請等 15 秒再試"); else alert("已送出 IR 命令："+cmd);
-}
 
     if (gas !== null && gas >= GAS_WARN) {
       gasStatus.textContent = '🚨 瓦斯超標';
@@ -415,24 +368,43 @@ async function sendFan(baseCmd){
       gasStatus.textContent = '等待資料';
       gasStatus.className = 'status warn';
       alertBanner.classList.remove('show');
-function unlockApp(){document.getElementById('loginScreen').style.display='none';document.getElementById('app').style.display='block';getSensors();getRelayState();setInterval(getSensors,5000);setInterval(getRelayState,5000);}
-function getAccount(){
-  try {
-    const raw = localStorage.getItem(ACCOUNT_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && parsed.username && parsed.password) return parsed;
     }
 
     chart.data.labels = feeds.map((_, i) => i + 1);
     chart.data.datasets[0].data = feeds.map(f => safeNumber(f.field1));
     chart.data.datasets[1].data = feeds.map(f => safeNumber(f.field3));
+const ACCOUNT_KEY = "smarthome_account";
+const DEFAULT_ACCOUNT = { username: "admin", password: "123456" };
+let memoryAccount = null;
+
+function safeNumber(v){if(v===null||v===undefined||v==="")return null;const n=Number(v);return Number.isFinite(n)?n:null;}
+function setText(id, value, unit, digits){const el=document.getElementById(id);if(value===null){el.textContent='--';}else if(unit){el.textContent=`${value.toFixed(digits)} ${unit}`;}else{el.textContent=`${value.toFixed(digits)}`;}}
+function setGasStatus(id, gas){const el=document.getElementById(id);if(gas===null){el.textContent='等待資料';el.className='status warn';}else if(gas>=GAS_WARN){el.textContent='🚨 瓦斯超標';el.className='status danger';}else{el.textContent='安全範圍';el.className='status safe';}}
+
+const ctx=document.getElementById('chart').getContext('2d');
+const chart=new Chart(ctx,{type:'line',data:{labels:[],datasets:[{label:'房間1 瓦斯',data:[],borderColor:'#fb7185',tension:0.35},{label:'房間2 瓦斯',data:[],borderColor:'#2dd4bf',tension:0.35}]}});
+
+async function getSensors(){
+  try{
+    const url=`https://api.thingspeak.com/channels/${SENSOR_CHANNEL}/feeds.json?results=20`;
+    const res=await fetch(url,{cache:'no-store'});const data=await res.json();
+    const feeds=Array.isArray(data.feeds)?data.feeds:[];if(!feeds.length)return;
+    const last=feeds[feeds.length-1];
+    const r1t=safeNumber(last.field1), r1h=safeNumber(last.field2), r1g=safeNumber(last.field3);
+    const r2t=safeNumber(last.field4), r2h=safeNumber(last.field5), r2g=safeNumber(last.field6);
+    setText('r1temp',r1t,'°C',1); setText('r1humi',r1h,'%',1); setText('r1gas',r1g,'',0);
+    setText('r2temp',r2t,'°C',1); setText('r2humi',r2h,'%',1); setText('r2gas',r2g,'',0);
+    setGasStatus('r1gasStatus',r1g); setGasStatus('r2gasStatus',r2g);
+    const alertBanner=document.getElementById('alertBanner');
+    if((r1g!==null&&r1g>=GAS_WARN)||(r2g!==null&&r2g>=GAS_WARN)) alertBanner.classList.add('show'); else alertBanner.classList.remove('show');
+    chart.data.labels=feeds.map((_,i)=>i+1);
+    chart.data.datasets[0].data=feeds.map(f=>safeNumber(f.field3));
+    chart.data.datasets[1].data=feeds.map(f=>safeNumber(f.field6));
     chart.update();
   } catch (e) {
     console.log("getSensors error:", e);
-    console.log('account read error:', e);
   }
-  return memoryAccount || DEFAULT_ACCOUNT;
+  }catch(e){console.log('getSensors error:',e);}
 }
 
 async function getRelayState() {
@@ -442,6 +414,13 @@ async function getRelayState() {
 
   const relay = data.field1 === "1" ? 1 : 0;
   const relayState = document.getElementById('relayState');
+async function getRelayState(){
+  const url=`https://api.thingspeak.com/channels/${RELAY_CHANNEL}/feeds/last.json?api_key=${RELAY_READ_KEY}`;
+  const res=await fetch(url); const data=await res.json();
+  const relay=data.field1==="1"?1:0; const relayState=document.getElementById('relayState');
+  if(relay===1){relayState.textContent='ON';relayState.className='relay-state safe';}
+  else{relayState.textContent='OFF';relayState.className='relay-state danger';}
+}
 
   if (relay === 1) {
     relayState.textContent = 'ON';
@@ -449,38 +428,40 @@ async function getRelayState() {
   } else {
     relayState.textContent = 'OFF';
     relayState.className = 'relay-state danger';
-function saveAccount(account){
-  memoryAccount = account;
-  try {
-    localStorage.setItem(ACCOUNT_KEY, JSON.stringify(account));
-  } catch (e) {
-    console.log('account save error:', e);
   }
+async function setRelay(value){
+  const url=`https://api.thingspeak.com/update?api_key=${RELAY_WRITE_KEY}&field1=${value}`;
+  const res=await fetch(url); const result=await res.text();
+  if(result==="0") alert("Relay Channel 寫入失敗，請等 15 秒再試"); else setTimeout(getRelayState,1500);
 }
-function setTab(mode){const isLogin=mode==='login';document.getElementById('loginForm').style.display=isLogin?'block':'none';document.getElementById('registerForm').style.display=isLogin?'none':'block';document.getElementById('showLoginTab').classList.toggle('active',isLogin);document.getElementById('showRegisterTab').classList.toggle('active',!isLogin);}
 
 async function setRelay(value) {
   const url = `https://api.thingspeak.com/update?api_key=${RELAY_WRITE_KEY}&field1=${value}`;
   const res = await fetch(url);
   const result = await res.text();
+async function sendFan(baseCmd){
+  irCounter=(irCounter+1)%10; const cmd=String(baseCmd)+String(irCounter);
+  const url=`https://api.thingspeak.com/update?api_key=${IR_WRITE_KEY}&field1=${cmd}`;
+  const res=await fetch(url); const result=await res.text();
+  if(result==="0") alert("IR Channel 寫入失敗，請等 15 秒再試"); else alert("已送出 IR 命令："+cmd);
+}
 
   if (result === "0") {
     alert("Relay Channel 寫入失敗，請等 15 秒再試");
   } else {
     setTimeout(getRelayState, 1500);
-document.getElementById('loginForm').addEventListener('submit', (e)=>{
-  e.preventDefault();
+function unlockApp(){document.getElementById('loginScreen').style.display='none';document.getElementById('app').style.display='block';getSensors();getRelayState();setInterval(getSensors,5000);setInterval(getRelayState,5000);}
+function getAccount(){
   try {
-    const user=document.getElementById('loginUsername').value.trim();
-    const pass=document.getElementById('loginPassword').value;
-    const error=document.getElementById('loginError'); error.textContent='';
-    const account=getAccount();
-    if(user===account.username && pass===account.password) unlockApp();
-    else error.textContent='帳號或密碼錯誤，請重新輸入。';
-  } catch (err) {
-    document.getElementById('loginError').textContent = '登入失敗，請改用 http 開啟頁面後重試。';
-    console.log('login error:', err);
+    const raw = localStorage.getItem(ACCOUNT_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.username && parsed.password) return parsed;
+    }
+  } catch (e) {
+    console.log('account read error:', e);
   }
+  return memoryAccount || DEFAULT_ACCOUNT;
 }
 
 // baseCmd:
@@ -496,31 +477,47 @@ async function sendFan(baseCmd) {
   const url = `https://api.thingspeak.com/update?api_key=${IR_WRITE_KEY}&field1=${cmd}`;
   const res = await fetch(url);
   const result = await res.text();
-});
 
   if (result === "0") {
     alert("IR Channel 寫入失敗，請等 15 秒再試");
   } else {
     alert("已送出 IR 命令：" + cmd);
-document.getElementById('registerForm').addEventListener('submit', (e)=>{
-  e.preventDefault();
+function saveAccount(account){
+  memoryAccount = account;
   try {
-    const user=document.getElementById('registerUsername').value.trim();
-    const pass=document.getElementById('registerPassword').value;
-    const msg=document.getElementById('registerError'); msg.style.color='#fb7185'; msg.textContent='';
-    if(user.length<3){msg.textContent='帳號至少需要 3 個字元。'; return;}
-    if(pass.length<6){msg.textContent='密碼至少需要 6 個字元。'; return;}
-    saveAccount({username:user, password: pass});
-    msg.style.color='#2dd4bf'; msg.textContent='註冊成功，請切換到登入頁登入。';
-    document.getElementById('registerForm').reset();
-  } catch (err) {
-    document.getElementById('registerError').textContent = '註冊失敗，請檢查瀏覽器是否允許儲存資料。';
-    console.log('register error:', err);
+    localStorage.setItem(ACCOUNT_KEY, JSON.stringify(account));
+  } catch (e) {
+    console.log('account save error:', e);
   }
 }
+function setTab(mode){const isLogin=mode==='login';document.getElementById('loginForm').style.display=isLogin?'block':'none';document.getElementById('registerForm').style.display=isLogin?'none':'block';document.getElementById('showLoginTab').classList.toggle('active',isLogin);document.getElementById('showRegisterTab').classList.toggle('active',!isLogin);}
+
+document.getElementById('loginForm').addEventListener('submit', (e)=>{
+  e.preventDefault();
+  const user=document.getElementById('loginUsername').value.trim();
+  const pass=document.getElementById('loginPassword').value;
+  const error=document.getElementById('loginError');
+  error.textContent='';
+  const account=getAccount();
+  if(user===account.username && pass===account.password) unlockApp();
+  else error.textContent='帳號或密碼錯誤，請重新輸入。';
+});
 
 getSensors();
 getRelayState();
+document.getElementById('registerForm').addEventListener('submit', (e)=>{
+  e.preventDefault();
+  const user=document.getElementById('registerUsername').value.trim();
+  const pass=document.getElementById('registerPassword').value;
+  const msg=document.getElementById('registerError');
+  msg.style.color='#fb7185';
+  msg.textContent='';
+  if(user.length<3){msg.textContent='帳號至少需要 3 個字元。'; return;}
+  if(pass.length<6){msg.textContent='密碼至少需要 6 個字元。'; return;}
+  saveAccount({username:user, password: pass});
+  msg.style.color='#2dd4bf';
+  msg.textContent='註冊成功，請切換到登入頁登入。';
+  document.getElementById('registerForm').reset();
 });
 
 setInterval(getSensors, 5000);
