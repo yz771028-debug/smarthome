@@ -3,129 +3,69 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>智慧居家控制系統</title>
+<title>智慧居家控制系統</</title>
 <title>雙房間智慧居家控制系統</title>
  
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <style>
-:root{
-  --bg:#0b1220;
-  --card:#131c2f;
-  --card2:#0f1728;
-  --line:#24324f;
-  --text:#eef4ff;
-  --muted:#9db0d6;
-  --good:#2dd4bf;
-  --warn:#facc15;
-  --danger:#fb7185;
-}
-
-*{box-sizing:border-box}
-
 body{
   margin:0;
-  font-family:Arial,"Microsoft JhengHei",sans-serif;
-  background:linear-gradient(180deg,#0b1220,#10192b);
-  color:var(--text);
+  font-family:Arial,"Microsoft JhengHei";
+  background:#0b1220;
+  color:white;
 }
 
-.wrap{
-  max-width:1150px;
-  margin:0 auto;
-  padding:24px 16px 40px;
-}
-
-h1{margin:0 0 10px;font-size:32px;}
-.subtitle{color:var(--muted);margin-bottom:20px;}
-
-.grid{
-  display:grid;
-  grid-template-columns:repeat(12,1fr);
-  gap:16px;
-}
+.wrap{max-width:1100px;margin:auto;padding:20px;}
 
 .card{
-  grid-column:span 12;
-  background:linear-gradient(180deg,var(--card),var(--card2));
-  border:1px solid var(--line);
-  border-radius:18px;
-  padding:18px;
+  background:#131c2f;
+  padding:16px;
+  border-radius:14px;
+  margin-bottom:16px;
 }
-
-.room{grid-column:span 6;}
 
 .sensor-grid{
   display:grid;
   grid-template-columns:repeat(3,1fr);
-  gap:14px;
+  gap:10px;
 }
 
-.sensor-box{
+.sensor{
   background:#0d1525;
-  border:1px solid var(--line);
-  border-radius:16px;
-  padding:18px;
+  padding:10px;
+  border-radius:10px;
 }
 
-.sensor-value{font-size:32px;font-weight:bold;}
-
-.status{margin-top:8px;font-size:14px;font-weight:bold;}
-.safe{color:var(--good);}
-.warn{color:var(--warn);}
-.danger{color:var(--danger);}
+.value{
+  font-size:28px;
+  font-weight:bold;
+}
 
 button{
+  padding:10px 14px;
   border:none;
-  border-radius:12px;
-  padding:12px 18px;
-  font-size:16px;
-  font-weight:bold;
-  cursor:pointer;
+  border-radius:10px;
   background:#2563eb;
   color:white;
+  cursor:pointer;
+  margin:5px;
 }
 
-.relay-state{
-  font-size:40px;
-  font-weight:bold;
-  text-align:center;
-}
+#app{display:none;}
 
-.alert-banner{
-  display:none;
-  margin-bottom:16px;
-  padding:14px;
-  border-radius:14px;
-  font-weight:bold;
-  background:rgba(251,113,133,.12);
-  color:var(--danger);
-  border:1px solid rgba(251,113,133,.35);
-}
-
-.show{display:block;}
-
-.chart-box{
-  background:#0d1525;
-  border:1px solid var(--line);
-  border-radius:16px;
-  padding:12px;
-}
-
-.login-screen{
-  min-height:100vh;
+.login{
   display:flex;
-  align-items:center;
   justify-content:center;
+  align-items:center;
+  height:100vh;
 }
 
-.login-card{
-  width:380px;
-  background:linear-gradient(180deg,var(--card),var(--card2));
-  border:1px solid var(--line);
-  border-radius:18px;
-  padding:22px;
+.login-box{
+  background:#131c2f;
+  padding:20px;
+  border-radius:12px;
+  width:300px;
 }
 </style>
 </head>
@@ -133,147 +73,146 @@ button{
 <body>
 
 <!-- 登入 -->
-<div id="loginScreen" class="login-screen">
-  <div class="login-card">
-    <h2>系統登入</h2>
-
-    <form id="loginForm">
-      <input id="loginUsername" placeholder="帳號"><br><br>
-      <input id="loginPassword" type="password" placeholder="密碼"><br><br>
-      <button>登入</button>
-      <div id="loginError"></div>
-    </form>
+<div id="loginScreen" class="login">
+  <div class="login-box">
+    <h2>登入</h2>
+    <input id="user" placeholder="帳號"><br><br>
+    <input id="pass" type="password" placeholder="密碼"><br><br>
+    <button onclick="login()">登入</button>
+    <div id="msg"></div>
   </div>
 </div>
 
 <!-- 系統 -->
-<div id="app" class="wrap" style="display:none;">
+<div id="app" class="wrap">
 
-  <div class="alert-banner" id="alertBanner">🚨 瓦斯超標警報</div>
-
-  <h1>雙房間智慧居家控制系統</h1>
-
-  <div class="grid">
-
-    <!-- 房間1 -->
-    <div class="card room">
-      <h3>房間1</h3>
-      <div class="sensor-grid">
-        <div class="sensor-box">溫度<div id="r1temp" class="sensor-value">--</div></div>
-        <div class="sensor-box">濕度<div id="r1humi" class="sensor-value">--</div></div>
-        <div class="sensor-box">瓦斯<div id="r1gas" class="sensor-value">--</div></div>
-      </div>
-    </div>
-
-    <!-- 房間2 -->
-    <div class="card room">
-      <h3>房間2</h3>
-      <div class="sensor-grid">
-        <div class="sensor-box">溫度<div id="r2temp" class="sensor-value">--</div></div>
-        <div class="sensor-box">濕度<div id="r2humi" class="sensor-value">--</div></div>
-        <div class="sensor-box">瓦斯<div id="r2gas" class="sensor-value">--</div></div>
-      </div>
-    </div>
-
-    <!-- Relay -->
-    <div class="card">
-      <h3>Relay</h3>
-      <div id="relayState" class="relay-state">--</div>
-      <button onclick="setRelay(1)">開</button>
-      <button onclick="setRelay(0)">關</button>
-    </div>
-
-    <!-- Chart -->
-    <div class="card">
-      <h3>瓦斯趨勢</h3>
-      <div class="chart-box">
-        <canvas id="chart"></canvas>
-      </div>
-    </div>
-
+  <div class="card">
+    <h2>雙房間系統</h2>
   </div>
+
+  <div class="card">
+    <h3>房間1</h3>
+    <div class="sensor-grid">
+      <div class="sensor">溫度<div id="r1t" class="value">--</div></div>
+      <div class="sensor">濕度<div id="r1h" class="value">--</div></div>
+      <div class="sensor">瓦斯<div id="r1g" class="value">--</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>房間2</h3>
+    <div class="sensor-grid">
+      <div class="sensor">溫度<div id="r2t" class="value">--</div></div>
+      <div class="sensor">濕度<div id="r2h" class="value">--</div></div>
+      <div class="sensor">瓦斯<div id="r2g" class="value">--</div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>瓦斯趨勢</h3>
+    <canvas id="chart"></canvas>
+  </div>
+
+  <div class="card">
+    <h3>控制</h3>
+    <button onclick="setRelay(1)">Relay ON</button>
+    <button onclick="setRelay(0)">Relay OFF</button>
+  </div>
+
 </div>
 
 <script>
+
 const SENSOR_CHANNEL = 3271973;
 const RELAY_CHANNEL = 3277178;
-const RELAY_READ_KEY = "GXZB8HZNOGR3U2SH";
 const RELAY_WRITE_KEY = "OIX0C2JRKET8RVKK";
+const RELAY_READ_KEY = "GXZB8HZNOGR3U2SH";
 
 const GAS_WARN = 350;
 
-function safeNumber(v){
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
-}
-
-// Chart
-const ctx = document.getElementById("chart").getContext("2d");
-const chart = new Chart(ctx,{
-  type:"line",
-  data:{
-    labels:[],
-    datasets:[
-      {label:"瓦斯1",data:[],borderColor:"#fb7185"},
-      {label:"瓦斯2",data:[],borderColor:"#2dd4bf"}
+// ========== Chart ==========
+const ctx = document.getElementById("chart");
+const chart = new Chart(ctx, {
+  type: "line",
+  data: {
+    labels: [],
+    datasets: [
+      { label: "房間1瓦斯", data: [], borderColor: "#fb7185" },
+      { label: "房間2瓦斯", data: [], borderColor: "#2dd4bf" }
     ]
   }
 });
 
-async function getSensors(){
-  const res = await fetch(`https://api.thingspeak.com/channels/${SENSOR_CHANNEL}/feeds.json?results=20`);
-  const data = await res.json();
-  const f = data.feeds;
-  if(!f.length) return;
+// ========== login ==========
+function login(){
+  const u = document.getElementById("user").value;
+  const p = document.getElementById("pass").value;
 
-  const last = f[f.length-1];
-
-  document.getElementById("r1temp").innerText = last.field1;
-  document.getElementById("r1humi").innerText = last.field2;
-  document.getElementById("r1gas").innerText = last.field3;
-
-  document.getElementById("r2temp").innerText = last.field4;
-  document.getElementById("r2humi").innerText = last.field5;
-  document.getElementById("r2gas").innerText = last.field6;
-
-  if(last.field3 > GAS_WARN || last.field6 > GAS_WARN){
-    document.getElementById("alertBanner").classList.add("show");
+  if(u === "admin" && p === "123456"){
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("app").style.display = "block";
+    start();
   } else {
-    document.getElementById("alertBanner").classList.remove("show");
+    document.getElementById("msg").innerText = "錯誤";
   }
-
-  chart.data.labels = f.map((_,i)=>i);
-  chart.data.datasets[0].data = f.map(x=>safeNumber(x.field3));
-  chart.data.datasets[1].data = f.map(x=>safeNumber(x.field6));
-  chart.update();
 }
 
-async function getRelayState(){
-  const res = await fetch(`https://api.thingspeak.com/channels/${RELAY_CHANNEL}/feeds/last.json?api_key=${RELAY_READ_KEY}`);
-  const d = await res.json();
-  document.getElementById("relayState").innerText = d.field1=="1"?"ON":"OFF";
+// ========== sensors ==========
+async function getSensors(){
+  try{
+    const res = await fetch(`https://api.thingspeak.com/channels/${SENSOR_CHANNEL}/feeds.json?results=20`);
+    const data = await res.json();
+
+    const f = data.feeds;
+    if(!f || !f.length) return;
+
+    const last = f[f.length-1];
+
+    set("r1t", last.field1);
+    set("r1h", last.field2);
+    set("r1g", last.field3);
+
+    set("r2t", last.field4);
+    set("r2h", last.field5);
+    set("r2g", last.field6);
+
+    chart.data.labels = f.map((_,i)=>i);
+    chart.data.datasets[0].data = f.map(x=>Number(x.field3));
+    chart.data.datasets[1].data = f.map(x=>Number(x.field6));
+    chart.update();
+
+  } catch(e){
+    console.log("sensor error", e);
+  }
 }
 
+function set(id,val){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.innerText = val ?? "--";
+}
+
+// ========== relay ==========
 async function setRelay(v){
   await fetch(`https://api.thingspeak.com/update?api_key=${RELAY_WRITE_KEY}&field1=${v}`);
 }
 
-function unlock(){
-  document.getElementById("loginScreen").style.display="none";
-  document.getElementById("app").style.display="block";
-  getSensors();
-  getRelayState();
-  setInterval(getSensors,5000);
-  setInterval(getRelayState,5000);
+async function getRelay(){
+  try{
+    const res = await fetch(`https://api.thingspeak.com/channels/${RELAY_CHANNEL}/feeds/last.json?api_key=${RELAY_READ_KEY}`);
+    const d = await res.json();
+    console.log("relay:", d.field1);
+  }catch(e){}
 }
 
-document.getElementById("loginForm").addEventListener("submit",(e)=>{
-  e.preventDefault();
-  const u = loginUsername.value;
-  const p = loginPassword.value;
-  if(u=="admin" && p=="123456") unlock();
-  else loginError.innerText="錯誤";
-});
+// ========== start ==========
+function start(){
+  getSensors();
+  getRelay();
+  setInterval(getSensors, 5000);
+  setInterval(getRelay, 5000);
+}
+
 </script>
 
 </body>
