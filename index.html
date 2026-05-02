@@ -162,34 +162,49 @@
   <div class="login-card">
     <h2>系統登入</h2>
     <div class="subtitle">可先註冊帳號與自訂密碼，再登入系統</div>
+
+    <!-- TAB 切換 -->
     <div class="login-tabs">
-      <button id="showLoginTab" type="button" class="tab-btn active">登入</button>
-      <button id="showRegisterTab" type="button" class="tab-btn">註冊</button>
+      <button id="tabLogin" type="button" class="tab-btn active" onclick="setTab('login')">
+        登入
+      </button>
+      <button id="tabReg" type="button" class="tab-btn" onclick="setTab('register')">
+        註冊
+      </button>
     </div>
+
+    <!-- 登入 -->
     <form id="loginForm">
       <div class="form-group">
-        <label for="loginUsername">帳號</label>
+        <label>帳號</label>
         <input id="loginUsername" type="text" autocomplete="username" required>
       </div>
+
       <div class="form-group">
-        <label for="loginPassword">密碼</label>
+        <label>密碼</label>
         <input id="loginPassword" type="password" autocomplete="current-password" required>
       </div>
+
       <button type="submit">登入</button>
       <div id="loginError" class="error-msg"></div>
     </form>
-    <form id="registerForm" style="display:none;">
+
+    <!-- 註冊 -->
+    <form id="registerForm" class="hide">
       <div class="form-group">
-        <label for="registerUsername">新帳號</label>
+        <label>新帳號</label>
         <input id="registerUsername" type="text" autocomplete="username" required>
       </div>
+
       <div class="form-group">
-        <label for="registerPassword">新密碼</label>
+        <label>新密碼</label>
         <input id="registerPassword" type="password" autocomplete="new-password" required>
       </div>
+
       <button type="submit">建立帳號</button>
       <div id="registerError" class="error-msg"></div>
     </form>
+
   </div>
 </div>
 
