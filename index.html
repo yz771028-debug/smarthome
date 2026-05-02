@@ -159,7 +159,7 @@
   <div class="login-card">
     <h2>系統登入</h2>
     <div class="subtitle">可先註冊帳號與自訂密碼，再登入系統</div>
-    <form id="loginForm">
+    <div id="loginForm">
       <div class="form-group">
         <label for="loginUsername">帳號</label>
         <input id="loginUsername" type="text" autocomplete="username" required>
@@ -168,12 +168,12 @@
         <label for="loginPassword">密碼</label>
         <input id="loginPassword" type="password" autocomplete="current-password" required>
       </div>
-      <button type="submit">登入</button>
+      <button type="button" onclick="handleLogin()">登入</button>
       <div id="loginError" class="error-msg"></div>
-    </form>
+    </div>
     <hr style="border-color:#24324f; opacity:.5; margin:18px 0;">
     <h3 style="margin:0 0 10px;">註冊新帳號</h3>
-    <form id="registerForm">
+    <div id="registerForm">
       <div class="form-group">
         <label for="registerUsername">新帳號</label>
         <input id="registerUsername" type="text" autocomplete="username" required>
@@ -182,9 +182,9 @@
         <label for="registerPassword">新密碼</label>
         <input id="registerPassword" type="password" autocomplete="new-password" required>
       </div>
-      <button type="submit">建立帳號</button>
+      <button type="button" onclick="handleRegister()">建立帳號</button>
       <div id="registerError" class="error-msg"></div>
-    </form>
+    </div>
   </div>
 </div>
 
@@ -293,6 +293,9 @@ function safeNumber(v) {
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
 }
+const ACCOUNT_KEY = "smarthome_account";
+const DEFAULT_ACCOUNT = { username: "admin", password: "123456" };
+let memoryAccount = null;
 
 const ctx = document.getElementById('chart').getContext('2d');
 const chart = new Chart(ctx, {
@@ -315,6 +318,9 @@ const chart = new Chart(ctx, {
     ]
   }
 });
+function safeNumber(v){if(v===null||v===undefined||v==="")return null;const n=Number(v);return Number.isFinite(n)?n:null;}
+function setText(id, value, unit, digits){const el=document.getElementById(id);if(value===null){el.textContent='--';}else if(unit){el.textContent=`${value.toFixed(digits)} ${unit}`;}else{el.textContent=`${value.toFixed(digits)}`;}}
+function setGasStatus(id, gas){const el=document.getElementById(id);if(gas===null){el.textContent='等待資料';el.className='status warn';}else if(gas>=GAS_WARN){el.textContent='🚨 瓦斯超標';el.className='status danger';}else{el.textContent='安全範圍';el.className='status safe';}}
 
 async function getSensors() {
   try {
@@ -324,56 +330,17 @@ async function getSensors() {
 
     const feeds = Array.isArray(data.feeds) ? data.feeds : [];
     if (!feeds.length) return;
-const ACCOUNT_KEY = "smarthome_account";
-const DEFAULT_ACCOUNT = { username: "admin", password: "123456" };
-let memoryAccount = null;
 
     const last = feeds[feeds.length - 1];
     const temp = safeNumber(last.field1);
     const humi = safeNumber(last.field2);
     const gas  = safeNumber(last.field3);
-function safeNumber(v){if(v===null||v===undefined||v==="")return null;const n=Number(v);return Number.isFinite(n)?n:null;}
-function setText(id, value, unit, digits){const el=document.getElementById(id);if(value===null){el.textContent='--';}else if(unit){el.textContent=`${value.toFixed(digits)} ${unit}`;}else{el.textContent=`${value.toFixed(digits)}`;}}
-function setGasStatus(id, gas){const el=document.getElementById(id);if(gas===null){el.textContent='等待資料';el.className='status warn';}else if(gas>=GAS_WARN){el.textContent='🚨 瓦斯超標';el.className='status danger';}else{el.textContent='安全範圍';el.className='status safe';}}
 
     document.getElementById('temp').textContent =
       temp === null ? '--' : `${temp.toFixed(1)} °C`;
 
     document.getElementById('humi').textContent =
       humi === null ? '--' : `${humi.toFixed(1)} %`;
-
-    document.getElementById('gas').textContent =
-      gas === null ? '--' : `${gas}`;
-
-    const tempStatus = document.getElementById('tempStatus');
-    if (temp !== null && temp > TEMP_WARN) {
-      tempStatus.textContent = '⚠ 溫度過高';
-      tempStatus.className = 'status warn';
-    } else {
-      tempStatus.textContent = '正常監測中';
-      tempStatus.className = 'status safe';
-    }
-
-    const gasStatus = document.getElementById('gasStatus');
-    const alertBanner = document.getElementById('alertBanner');
-
-    if (gas !== null && gas >= GAS_WARN) {
-      gasStatus.textContent = '🚨 瓦斯超標';
-      gasStatus.className = 'status danger';
-      alertBanner.classList.add('show');
-    } else if (gas !== null) {
-      gasStatus.textContent = '安全範圍';
-      gasStatus.className = 'status safe';
-      alertBanner.classList.remove('show');
-    } else {
-      gasStatus.textContent = '等待資料';
-      gasStatus.className = 'status warn';
-      alertBanner.classList.remove('show');
-    }
-
-    chart.data.labels = feeds.map((_, i) => i + 1);
-    chart.data.datasets[0].data = feeds.map(f => safeNumber(f.field1));
-    chart.data.datasets[1].data = feeds.map(f => safeNumber(f.field3));
 var chartCtx = document.getElementById('chart').getContext('2d');
 if (window.__smarthomeChart) {
   window.__smarthomeChart.destroy();
@@ -397,10 +364,72 @@ async function getSensors(){
     chart.data.datasets[0].data=feeds.map(f=>safeNumber(f.field3));
     chart.data.datasets[1].data=feeds.map(f=>safeNumber(f.field6));
     chart.update();
+  }catch(e){console.log('getSensors error:',e);}
+}
+
+    document.getElementById('gas').textContent =
+      gas === null ? '--' : `${gas}`;
+async function getRelayState(){
+  const url=`https://api.thingspeak.com/channels/${RELAY_CHANNEL}/feeds/last.json?api_key=${RELAY_READ_KEY}`;
+  const res=await fetch(url); const data=await res.json();
+  const relay=data.field1==="1"?1:0; const relayState=document.getElementById('relayState');
+  if(relay===1){relayState.textContent='ON';relayState.className='relay-state safe';}
+  else{relayState.textContent='OFF';relayState.className='relay-state danger';}
+}
+
+    const tempStatus = document.getElementById('tempStatus');
+    if (temp !== null && temp > TEMP_WARN) {
+      tempStatus.textContent = '⚠ 溫度過高';
+      tempStatus.className = 'status warn';
+    } else {
+      tempStatus.textContent = '正常監測中';
+      tempStatus.className = 'status safe';
+    }
+async function setRelay(value){
+  const url=`https://api.thingspeak.com/update?api_key=${RELAY_WRITE_KEY}&field1=${value}`;
+  const res=await fetch(url); const result=await res.text();
+  if(result==="0") alert("Relay Channel 寫入失敗，請等 15 秒再試"); else setTimeout(getRelayState,1500);
+}
+
+    const gasStatus = document.getElementById('gasStatus');
+    const alertBanner = document.getElementById('alertBanner');
+async function sendFan(baseCmd){
+  irCounter=(irCounter+1)%10; const cmd=String(baseCmd)+String(irCounter);
+  const url=`https://api.thingspeak.com/update?api_key=${IR_WRITE_KEY}&field1=${cmd}`;
+  const res=await fetch(url); const result=await res.text();
+  if(result==="0") alert("IR Channel 寫入失敗，請等 15 秒再試"); else alert("已送出 IR 命令："+cmd);
+}
+
+    if (gas !== null && gas >= GAS_WARN) {
+      gasStatus.textContent = '🚨 瓦斯超標';
+      gasStatus.className = 'status danger';
+      alertBanner.classList.add('show');
+    } else if (gas !== null) {
+      gasStatus.textContent = '安全範圍';
+      gasStatus.className = 'status safe';
+      alertBanner.classList.remove('show');
+    } else {
+      gasStatus.textContent = '等待資料';
+      gasStatus.className = 'status warn';
+      alertBanner.classList.remove('show');
+function unlockApp(){document.getElementById('loginScreen').style.display='none';document.getElementById('app').style.display='block';getSensors();getRelayState();setInterval(getSensors,5000);setInterval(getRelayState,5000);}
+function getAccount(){
+  try {
+    const raw = localStorage.getItem(ACCOUNT_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.username && parsed.password) return parsed;
+    }
+
+    chart.data.labels = feeds.map((_, i) => i + 1);
+    chart.data.datasets[0].data = feeds.map(f => safeNumber(f.field1));
+    chart.data.datasets[1].data = feeds.map(f => safeNumber(f.field3));
+    chart.update();
   } catch (e) {
     console.log("getSensors error:", e);
+    console.log('account read error:', e);
   }
-  }catch(e){console.log('getSensors error:',e);}
+  return memoryAccount || DEFAULT_ACCOUNT;
 }
 
 async function getRelayState() {
@@ -410,13 +439,6 @@ async function getRelayState() {
 
   const relay = data.field1 === "1" ? 1 : 0;
   const relayState = document.getElementById('relayState');
-async function getRelayState(){
-  const url=`https://api.thingspeak.com/channels/${RELAY_CHANNEL}/feeds/last.json?api_key=${RELAY_READ_KEY}`;
-  const res=await fetch(url); const data=await res.json();
-  const relay=data.field1==="1"?1:0; const relayState=document.getElementById('relayState');
-  if(relay===1){relayState.textContent='ON';relayState.className='relay-state safe';}
-  else{relayState.textContent='OFF';relayState.className='relay-state danger';}
-}
 
   if (relay === 1) {
     relayState.textContent = 'ON';
@@ -424,40 +446,33 @@ async function getRelayState(){
   } else {
     relayState.textContent = 'OFF';
     relayState.className = 'relay-state danger';
+function saveAccount(account){
+  memoryAccount = account;
+  try {
+    localStorage.setItem(ACCOUNT_KEY, JSON.stringify(account));
+  } catch (e) {
+    console.log('account save error:', e);
   }
-async function setRelay(value){
-  const url=`https://api.thingspeak.com/update?api_key=${RELAY_WRITE_KEY}&field1=${value}`;
-  const res=await fetch(url); const result=await res.text();
-  if(result==="0") alert("Relay Channel 寫入失敗，請等 15 秒再試"); else setTimeout(getRelayState,1500);
 }
 
 async function setRelay(value) {
   const url = `https://api.thingspeak.com/update?api_key=${RELAY_WRITE_KEY}&field1=${value}`;
   const res = await fetch(url);
   const result = await res.text();
-async function sendFan(baseCmd){
-  irCounter=(irCounter+1)%10; const cmd=String(baseCmd)+String(irCounter);
-  const url=`https://api.thingspeak.com/update?api_key=${IR_WRITE_KEY}&field1=${cmd}`;
-  const res=await fetch(url); const result=await res.text();
-  if(result==="0") alert("IR Channel 寫入失敗，請等 15 秒再試"); else alert("已送出 IR 命令："+cmd);
-}
 
   if (result === "0") {
     alert("Relay Channel 寫入失敗，請等 15 秒再試");
   } else {
     setTimeout(getRelayState, 1500);
-function unlockApp(){document.getElementById('loginScreen').style.display='none';document.getElementById('app').style.display='block';getSensors();getRelayState();setInterval(getSensors,5000);setInterval(getRelayState,5000);}
-function getAccount(){
-  try {
-    const raw = localStorage.getItem(ACCOUNT_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && parsed.username && parsed.password) return parsed;
-    }
-  } catch (e) {
-    console.log('account read error:', e);
   }
-  return memoryAccount || DEFAULT_ACCOUNT;
+function handleLogin(){
+  const user=document.getElementById('loginUsername').value.trim();
+  const pass=document.getElementById('loginPassword').value;
+  const error=document.getElementById('loginError');
+  error.textContent='';
+  const account=getAccount();
+  if(user===account.username && pass===account.password) unlockApp();
+  else error.textContent='帳號或密碼錯誤，請重新輸入。';
 }
 
 // baseCmd:
@@ -478,33 +493,8 @@ async function sendFan(baseCmd) {
     alert("IR Channel 寫入失敗，請等 15 秒再試");
   } else {
     alert("已送出 IR 命令：" + cmd);
-function saveAccount(account){
-  memoryAccount = account;
-  try {
-    localStorage.setItem(ACCOUNT_KEY, JSON.stringify(account));
-  } catch (e) {
-    console.log('account save error:', e);
   }
-}
-
-getSensors();
-getRelayState();
-document.getElementById('loginForm').addEventListener('submit', (e)=>{
-  e.preventDefault();
-  const user=document.getElementById('loginUsername').value.trim();
-  const pass=document.getElementById('loginPassword').value;
-  const error=document.getElementById('loginError');
-  error.textContent='';
-  const account=getAccount();
-  if(user===account.username && pass===account.password) unlockApp();
-  else error.textContent='帳號或密碼錯誤，請重新輸入。';
-});
-
-setInterval(getSensors, 5000);
-setInterval(getRelayState, 5000);
-</script>
-document.getElementById('registerForm').addEventListener('submit', (e)=>{
-  e.preventDefault();
+function handleRegister(){
   const user=document.getElementById('registerUsername').value.trim();
   const pass=document.getElementById('registerPassword').value;
   const msg=document.getElementById('registerError');
@@ -515,10 +505,17 @@ document.getElementById('registerForm').addEventListener('submit', (e)=>{
   saveAccount({username:user, password: pass});
   msg.style.color='#2dd4bf';
   msg.textContent='註冊成功，請切換到登入頁登入。';
-  document.getElementById('registerForm').reset();
-});
+  document.getElementById('registerUsername').value = '';
+  document.getElementById('registerPassword').value = '';
+}
 
+getSensors();
+getRelayState();
+
+setInterval(getSensors, 5000);
+setInterval(getRelayState, 5000);
 document.getElementById('logoutBtn').onclick = () => location.reload();
 </script>
+
 </body>
 </html>
