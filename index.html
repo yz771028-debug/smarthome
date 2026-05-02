@@ -491,42 +491,152 @@ function saveAccount(account){
     console.log('account save error:', e);
   }
 }
-function setTab(mode){const isLogin=mode==='login';document.getElementById('loginForm').style.display=isLogin?'block':'none';document.getElementById('registerForm').style.display=isLogin?'none':'block';document.getElementById('showLoginTab').classList.toggle('active',isLogin);document.getElementById('showRegisterTab').classList.toggle('active',!isLogin);}
+// 註冊帳號
+function registerAccount(username, password) {
+  const account = {
+    username: username,
+    password: password
+  };
+  localStorage.setItem(ACCOUNT_KEY, JSON.stringify(account));
+}
 
-document.getElementById('loginForm').addEventListener('submit', (e)=>{
+// 取得帳號
+function getAccount() {
+  const data = localStorage.getItem(ACCOUNT_KEY);
+  if (!data) return null;
+  return JSON.parse(data);
+}
+
+// 登入驗證
+function login(username, password) {
+  const account = getAccount();
+
+  if (!account) {
+    return "尚未註冊帳號";
+  }
+
+  if (
+    username === account.username &&
+    password === account.password
+  ) {
+    localStorage.setItem(LOGIN_KEY, "true");
+    return "success";
+  }
+
+  return "帳號或密碼錯誤";
+}
+
+// 登出
+function logout() {
+  localStorage.removeItem(LOGIN_KEY);
+  location.reload();
+}
+
+// 顯示主系統
+function unlockApp() {
+  document.getElementById("loginScreen").style.display = "none";
+  document.getElementById("app").style.display = "block";
+}
+
+// 切換登入 / 註冊頁
+function setTab(mode) {
+  const isLogin = mode === "login";
+
+  document.getElementById("loginForm").style.display =
+    isLogin ? "block" : "none";
+
+  document.getElementById("registerForm").style.display =
+    isLogin ? "none" : "block";
+
+  document
+    .getElementById("showLoginTab")
+    .classList.toggle("active", isLogin);
+
+  document
+    .getElementById("showRegisterTab")
+    .classList.toggle("active", !isLogin);
+}
+
+// ==================== 表單事件 ====================
+
+// 登入
+document.getElementById("loginForm").addEventListener("submit", function (e) {
   e.preventDefault();
-  const user=document.getElementById('loginUsername').value.trim();
-  const pass=document.getElementById('loginPassword').value;
-  const error=document.getElementById('loginError');
-  error.textContent='';
-  const account=getAccount();
-  if(user===account.username && pass===account.password) unlockApp();
-  else error.textContent='帳號或密碼錯誤，請重新輸入。';
+
+  const username = document
+    .getElementById("loginUsername")
+    .value.trim();
+
+  const password = document
+    .getElementById("loginPassword")
+    .value;
+
+  const error = document.getElementById("loginError");
+
+  error.textContent = "";
+
+  const result = login(username, password);
+
+  if (result === "success") {
+    unlockApp();
+  } else {
+    error.textContent = result;
+  }
 });
 
-getSensors();
-getRelayState();
-document.getElementById('registerForm').addEventListener('submit', (e)=>{
+// 註冊
+document.getElementById("registerForm").addEventListener("submit", function (e) {
   e.preventDefault();
-  const user=document.getElementById('registerUsername').value.trim();
-  const pass=document.getElementById('registerPassword').value;
-  const msg=document.getElementById('registerError');
-  msg.style.color='#fb7185';
-  msg.textContent='';
-  if(user.length<3){msg.textContent='帳號至少需要 3 個字元。'; return;}
-  if(pass.length<6){msg.textContent='密碼至少需要 6 個字元。'; return;}
-  saveAccount({username:user, password: pass});
-  msg.style.color='#2dd4bf';
-  msg.textContent='註冊成功，請切換到登入頁登入。';
-  document.getElementById('registerForm').reset();
+
+  const username = document
+    .getElementById("registerUsername")
+    .value.trim();
+
+  const password = document
+    .getElementById("registerPassword")
+    .value;
+
+  const error = document.getElementById("registerError");
+
+  error.style.color = "#fb7185";
+  error.textContent = "";
+
+  if (username.length < 3) {
+    error.textContent = "帳號至少需要3個字元";
+    return;
+  }
+
+  if (password.length < 6) {
+    error.textContent = "密碼至少需要6個字元";
+    return;
+  }
+
+  registerAccount(username, password);
+
+  error.style.color = "#2dd4bf";
+  error.textContent = "註冊成功，請切換到登入頁";
+  document.getElementById("registerForm").reset();
 });
 
-setInterval(getSensors, 5000);
-setInterval(getRelayState, 5000);
-document.getElementById('showLoginTab').onclick = () => setTab('login');
-document.getElementById('showRegisterTab').onclick = () => setTab('register');
-document.getElementById('logoutBtn').onclick = () => location.reload();
-setTab('login');
+// tab切換
+document.getElementById("showLoginTab").onclick = function () {
+  setTab("login");
+};
+
+document.getElementById("showRegisterTab").onclick = function () {
+  setTab("register");
+};
+
+// 登出
+document.getElementById("logoutBtn").onclick = logout;
+
+// 自動登入
+if (localStorage.getItem(LOGIN_KEY) === "true") {
+  unlockApp();
+}
+
+// 預設顯示登入
+setTab("login");
 </script>
 
 </body>
