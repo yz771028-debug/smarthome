@@ -144,9 +144,6 @@
   .login-screen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;}
   .login-card{width:min(420px,100%);background:linear-gradient(180deg,var(--card),var(--card2));border:1px solid var(--line);border-radius:18px;padding:22px;box-shadow:0 10px 30px rgba(0,0,0,.25);}
   .form-group{ margin-bottom:12px; }
-  .login-tabs{display:flex;gap:8px;margin:8px 0 14px;}
-  .tab-btn{flex:1;background:#1d4ed8;opacity:.75;}
-  .tab-btn.active{opacity:1;outline:2px solid #60a5fa;}
   label{display:block;margin-bottom:6px;color:var(--muted);}
   input{width:100%;border:1px solid var(--line);border-radius:10px;background:#0d1525;color:var(--text);padding:10px 12px;font-size:15px;}
   .error-msg{margin-top:10px;color:var(--danger);font-size:14px;min-height:20px;}
@@ -158,54 +155,36 @@
 </style>
 </head>
 <body>
-
 <div id="loginScreen" class="login-screen">
   <div class="login-card">
     <h2>系統登入</h2>
     <div class="subtitle">可先註冊帳號與自訂密碼，再登入系統</div>
-
-    <!-- TAB 切換 -->
-    <div class="login-tabs">
-      <button id="tabLogin" type="button" class="tab-btn active" onclick="setTab('login')">
-        登入
-      </button>
-      <button id="tabReg" type="button" class="tab-btn" onclick="setTab('register')">
-        註冊
-      </button>
-    </div>
-
-    <!-- 登入 -->
     <form id="loginForm">
       <div class="form-group">
-        <label>帳號</label>
+        <label for="loginUsername">帳號</label>
         <input id="loginUsername" type="text" autocomplete="username" required>
       </div>
-
       <div class="form-group">
-        <label>密碼</label>
+        <label for="loginPassword">密碼</label>
         <input id="loginPassword" type="password" autocomplete="current-password" required>
       </div>
-
       <button type="submit">登入</button>
       <div id="loginError" class="error-msg"></div>
     </form>
-
-    <!-- 註冊 -->
-    <form id="registerForm" style="display:none;">
+    <hr style="border-color:#24324f; opacity:.5; margin:18px 0;">
+    <h3 style="margin:0 0 10px;">註冊新帳號</h3>
+    <form id="registerForm">
       <div class="form-group">
-        <label>新帳號</label>
+        <label for="registerUsername">新帳號</label>
         <input id="registerUsername" type="text" autocomplete="username" required>
       </div>
-
       <div class="form-group">
-        <label>新密碼</label>
+        <label for="registerPassword">新密碼</label>
         <input id="registerPassword" type="password" autocomplete="new-password" required>
       </div>
-
       <button type="submit">建立帳號</button>
       <div id="registerError" class="error-msg"></div>
     </form>
-
   </div>
 </div>
 
@@ -345,11 +324,17 @@ async function getSensors() {
 
     const feeds = Array.isArray(data.feeds) ? data.feeds : [];
     if (!feeds.length) return;
+const ACCOUNT_KEY = "smarthome_account";
+const DEFAULT_ACCOUNT = { username: "admin", password: "123456" };
+let memoryAccount = null;
 
     const last = feeds[feeds.length - 1];
     const temp = safeNumber(last.field1);
     const humi = safeNumber(last.field2);
     const gas  = safeNumber(last.field3);
+function safeNumber(v){if(v===null||v===undefined||v==="")return null;const n=Number(v);return Number.isFinite(n)?n:null;}
+function setText(id, value, unit, digits){const el=document.getElementById(id);if(value===null){el.textContent='--';}else if(unit){el.textContent=`${value.toFixed(digits)} ${unit}`;}else{el.textContent=`${value.toFixed(digits)}`;}}
+function setGasStatus(id, gas){const el=document.getElementById(id);if(gas===null){el.textContent='等待資料';el.className='status warn';}else if(gas>=GAS_WARN){el.textContent='🚨 瓦斯超標';el.className='status danger';}else{el.textContent='安全範圍';el.className='status safe';}}
 
     document.getElementById('temp').textContent =
       temp === null ? '--' : `${temp.toFixed(1)} °C`;
@@ -359,9 +344,6 @@ async function getSensors() {
 
     document.getElementById('gas').textContent =
       gas === null ? '--' : `${gas}`;
-const ACCOUNT_KEY = "smarthome_account";
-const DEFAULT_ACCOUNT = { username: "admin", password: "123456" };
-let memoryAccount = null;
 
     const tempStatus = document.getElementById('tempStatus');
     if (temp !== null && temp > TEMP_WARN) {
@@ -388,9 +370,6 @@ let memoryAccount = null;
       gasStatus.className = 'status warn';
       alertBanner.classList.remove('show');
     }
-function safeNumber(v){if(v===null||v===undefined||v==="")return null;const n=Number(v);return Number.isFinite(n)?n:null;}
-function setText(id, value, unit, digits){const el=document.getElementById(id);if(value===null){el.textContent='--';}else if(unit){el.textContent=`${value.toFixed(digits)} ${unit}`;}else{el.textContent=`${value.toFixed(digits)}`;}}
-function setGasStatus(id, gas){const el=document.getElementById(id);if(gas===null){el.textContent='等待資料';el.className='status warn';}else if(gas>=GAS_WARN){el.textContent='🚨 瓦斯超標';el.className='status danger';}else{el.textContent='安全範圍';el.className='status safe';}}
 
     chart.data.labels = feeds.map((_, i) => i + 1);
     chart.data.datasets[0].data = feeds.map(f => safeNumber(f.field1));
@@ -507,8 +486,9 @@ function saveAccount(account){
     console.log('account save error:', e);
   }
 }
-function setTab(mode){const isLogin=mode==='login';document.getElementById('loginForm').style.display=isLogin?'block':'none';document.getElementById('registerForm').style.display=isLogin?'none':'block';document.getElementById('showLoginTab').classList.toggle('active',isLogin);document.getElementById('showRegisterTab').classList.toggle('active',!isLogin);}
 
+getSensors();
+getRelayState();
 document.getElementById('loginForm').addEventListener('submit', (e)=>{
   e.preventDefault();
   const user=document.getElementById('loginUsername').value.trim();
@@ -520,8 +500,9 @@ document.getElementById('loginForm').addEventListener('submit', (e)=>{
   else error.textContent='帳號或密碼錯誤，請重新輸入。';
 });
 
-getSensors();
-getRelayState();
+setInterval(getSensors, 5000);
+setInterval(getRelayState, 5000);
+</script>
 document.getElementById('registerForm').addEventListener('submit', (e)=>{
   e.preventDefault();
   const user=document.getElementById('registerUsername').value.trim();
@@ -537,13 +518,7 @@ document.getElementById('registerForm').addEventListener('submit', (e)=>{
   document.getElementById('registerForm').reset();
 });
 
-setInterval(getSensors, 5000);
-setInterval(getRelayState, 5000);
-document.getElementById('showLoginTab').onclick = () => setTab('login');
-document.getElementById('showRegisterTab').onclick = () => setTab('register');
 document.getElementById('logoutBtn').onclick = () => location.reload();
-setTab('login');
 </script>
-
 </body>
 </html>
