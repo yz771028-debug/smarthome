@@ -496,49 +496,58 @@ const ACCOUNT_KEY = "smarthome_account";
 const LOGIN_KEY = "isLogin";
 
 // ===== 註冊 =====
-// 登入 / 註冊 Tab 切換
+document.addEventListener('DOMContentLoaded', () => { // 確保 DOM 已加載
+  // 取得元素
   const loginTab = document.getElementById('showLoginTab');
   const regTab = document.getElementById('showRegisterTab');
   const loginFormDiv = document.getElementById('loginForm');
   const registerFormDiv = document.getElementById('registerForm');
   
+  // 修改：統一清空輸入與訊息的輔助函式
+  function clearFields() {
+    document.querySelectorAll('input').forEach(input => input.value = '');
+    document.getElementById('loginError').innerText = '';
+    document.getElementById('registerError').innerText = '';
+  }
+
   function setTabMode(mode) {
+    clearFields(); // 切換時清空
     if (mode === 'login') {
       loginFormDiv.style.display = 'block';
       registerFormDiv.style.display = 'none';
       loginTab.classList.add('active');
       regTab.classList.remove('active');
-      // 清除錯誤訊息
-      document.getElementById('loginError').innerText = '';
-      document.getElementById('registerError').innerText = '';
     } else {
       loginFormDiv.style.display = 'none';
       registerFormDiv.style.display = 'block';
       regTab.classList.add('active');
       loginTab.classList.remove('active');
-      document.getElementById('loginError').innerText = '';
-      document.getElementById('registerError').innerText = '';
     }
   }
+
   loginTab.onclick = () => setTabMode('login');
   regTab.onclick = () => setTabMode('register');
   setTabMode('login');
 
   // 登入邏輯
-  document.getElementById('loginForm').addEventListener('submit', (e) => {
+  loginFormDiv.addEventListener('submit', (e) => {
     e.preventDefault();
     const user = document.getElementById('loginUsername').value.trim();
     const pass = document.getElementById('loginPassword').value;
     const errDiv = document.getElementById('loginError');
+
     if (!user || !pass) {
-      errDiv.innerText = "請輸入帳號與密碼";
+      errDiv.innerText = "❌ 請輸入帳號與密碼";
+      errDiv.style.color = "#f87171";
       return;
     }
+
     const result = loginUser(user, pass);
     if (result.success) {
-      // 切換畫面
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('app').style.display = 'block';
+      
+      // 啟動定時任務
       fetchSensorsAndChart();
       getRelayState();
       if (window._interval1) clearInterval(window._interval1);
@@ -552,22 +561,33 @@ const LOGIN_KEY = "isLogin";
   });
 
   // 註冊邏輯
-  document.getElementById('registerForm').addEventListener('submit', (e) => {
+  registerFormDiv.addEventListener('submit', (e) => {
     e.preventDefault();
     const user = document.getElementById('registerUsername').value.trim();
     const pass = document.getElementById('registerPassword').value;
+    // 建議 HTML 增加 id="registerConfirmPassword" 的欄位
+    const confirmPass = document.getElementById('registerConfirmPassword')?.value; 
     const errSpan = document.getElementById('registerError');
+
+    // 額外檢查：確認密碼是否一致 (如果有該欄位)
+    if (confirmPass !== undefined && pass !== confirmPass) {
+      errSpan.style.color = "#f87171";
+      errSpan.innerText = "❌ 兩次輸入的密碼不一致";
+      return;
+    }
+
     const res = registerUser(user, pass);
     if (res.success) {
       errSpan.style.color = "#2dd4bf";
-      errSpan.innerText = "✅ 註冊成功！請點擊「登入」頁面進行登入";
-      // 清空輸入框
-      document.getElementById('registerUsername').value = '';
-      document.getElementById('registerPassword').value = '';
-      // 3秒後切換至登入表單
+      errSpan.innerText = "✅ 註冊成功！即將為您跳轉...";
+      
+      // 禁用按鈕防止重複點擊
+      const btn = registerFormDiv.querySelector('button');
+      if(btn) btn.disabled = true;
+
       setTimeout(() => {
         setTabMode('login');
-        errSpan.innerText = "";
+        if(btn) btn.disabled = false;
       }, 2000);
     } else {
       errSpan.style.color = "#f87171";
@@ -575,18 +595,15 @@ const LOGIN_KEY = "isLogin";
     }
   });
 
-  // 登出按鈕
   document.getElementById('logoutBtn').addEventListener('click', logoutSystem);
 
-  // 檢查自動登入
   const autoLogged = checkAutoLogin();
   if (!autoLogged) {
     document.getElementById('loginScreen').style.display = 'flex';
     document.getElementById('app').style.display = 'none';
-    if (window._interval1) clearInterval(window._interval1);
-    if (window._interval2) clearInterval(window._interval2);
   }
 });
+
 </script>
 
 </body>
