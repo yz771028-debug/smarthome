@@ -155,97 +155,43 @@
     .room{grid-column:span 12;}
     .sensor-grid{grid-template-columns:1fr;}
   }
-const ACCOUNT_KEY = "smarthome_account";
-
-// 預設帳號
-const DEFAULT_ACCOUNT = {
-  username: "test",
-  password: "123456"
-};
-
-// 讀取帳號
-function getAccount() {
-  const data = localStorage.getItem(ACCOUNT_KEY);
-  return data ? JSON.parse(data) : DEFAULT_ACCOUNT;
-}
-
-// 儲存帳號
-function saveAccount(account) {
-  localStorage.setItem(ACCOUNT_KEY, JSON.stringify(account));
-}
-
-/* =====================
-   切換登入 / 註冊
-===================== */
-function setTab(mode) {
-  const isLogin = mode === "login";
-
-  document.getElementById("loginForm").style.display = isLogin ? "block" : "none";
-  document.getElementById("registerForm").style.display = isLogin ? "none" : "block";
-
-  document.getElementById("showLoginTab").classList.toggle("active", isLogin);
-  document.getElementById("showRegisterTab").classList.toggle("active", !isLogin);
-}
-
-/* =====================
-   登入
-===================== */
-document.getElementById("loginForm").addEventListener("submit", (e) => {
-  e.preventDefault();
-
-  const user = document.getElementById("loginUsername").value.trim();
-  const pass = document.getElementById("loginPassword").value;
-  const error = document.getElementById("loginError");
-
-  const account = getAccount();
-
-  if (user === account.username && pass === account.password) {
-    document.getElementById("loginScreen").style.display = "none";
-    document.getElementById("app").style.display = "block";
-  } else {
-    error.textContent = "帳號或密碼錯誤";
-  }
-});
-
-/* =====================
-   註冊
-===================== */
-document.getElementById("registerForm").addEventListener("submit", (e) => {
-  e.preventDefault();
-
-  const user = document.getElementById("registerUsername").value.trim();
-  const pass = document.getElementById("registerPassword").value;
-  const msg = document.getElementById("registerError");
-
-  msg.textContent = "";
-  msg.style.color = "#fb7185";
-
-  if (user.length < 3) {
-    msg.textContent = "帳號至少 3 個字";
-    return;
-  }
-
-  if (pass.length < 6) {
-    msg.textContent = "密碼至少 6 個字";
-    return;
-  }
-
-  saveAccount({ username: user, password: pass });
-
-  msg.style.color = "#2dd4bf";
-  msg.textContent = "註冊成功，請切換登入";
-
-  document.getElementById("registerForm").reset();
-});
-
-/* =====================
-   tab 按鈕事件
-===================== */
-document.getElementById("showLoginTab").onclick = () => setTab("login");
-document.getElementById("showRegisterTab").onclick = () => setTab("register");
-
-/* 預設顯示登入 */
-setTab("login");
+</style>
+</head>
+<body>
+<div id="loginScreen" class="login-screen">
+  <div class="login-card">
+    <h2>系統登入</h2>
+    <div class="subtitle">可先註冊帳號與自訂密碼，再登入系統</div>
+    <div class="login-tabs">
+      <button id="showLoginTab" type="button" class="tab-btn active">登入</button>
+      <button id="showRegisterTab" type="button" class="tab-btn">註冊</button>
+    </div>
+    <form id="loginForm">
+      <div class="form-group">
+        <label for="loginUsername">帳號</label>
+        <input id="loginUsername" type="text" autocomplete="username" required>
+      </div>
+      <div class="form-group">
+        <label for="loginPassword">密碼</label>
+        <input id="loginPassword" type="password" autocomplete="current-password" required>
+      </div>
+      <button type="submit">登入</button>
+      <div id="loginError" class="error-msg"></div>
+    </form>
+    <form id="registerForm" style="display:none;">
+      <div class="form-group">
+        <label for="registerUsername">新帳號</label>
+        <input id="registerUsername" type="text" autocomplete="username" required>
+      </div>
+      <div class="form-group">
+        <label for="registerPassword">新密碼</label>
+        <input id="registerPassword" type="password" autocomplete="new-password" required>
+      </div>
+      <button type="submit">建立帳號</button>
+      <div id="registerError" class="error-msg"></div>
+    </form>
+  </div>
+</div>
 
 <div class="wrap">
   <h1>智慧居家控制系統</h1>
@@ -545,7 +491,6 @@ function saveAccount(account){
     console.log('account save error:', e);
   }
 }
-<script>
 function setTab(mode){const isLogin=mode==='login';document.getElementById('loginForm').style.display=isLogin?'block':'none';document.getElementById('registerForm').style.display=isLogin?'none':'block';document.getElementById('showLoginTab').classList.toggle('active',isLogin);document.getElementById('showRegisterTab').classList.toggle('active',!isLogin);}
 
 document.getElementById('loginForm').addEventListener('submit', (e)=>{
@@ -582,7 +527,6 @@ document.getElementById('showLoginTab').onclick = () => setTab('login');
 document.getElementById('showRegisterTab').onclick = () => setTab('register');
 document.getElementById('logoutBtn').onclick = () => location.reload();
 setTab('login');
-
 </script>
 
 </body>
