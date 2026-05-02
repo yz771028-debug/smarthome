@@ -491,123 +491,112 @@ function saveAccount(account){
     console.log('account save error:', e);
   }
 }
-// 註冊帳號
 <script>
-document.addEventListener("DOMContentLoaded", function () {
-
 const ACCOUNT_KEY = "smarthome_account";
 const LOGIN_KEY = "isLogin";
 
-// 註冊
-function registerAccount(username, password) {
+// ===== 註冊 =====
+function registerAccount(user, pass){
   localStorage.setItem(ACCOUNT_KEY, JSON.stringify({
-    username,
-    password
+    username: user,
+    password: pass
   }));
 }
 
-// 取得帳號
-function getAccount() {
+// ===== 讀帳號 =====
+function getAccount(){
   const data = localStorage.getItem(ACCOUNT_KEY);
   return data ? JSON.parse(data) : null;
 }
 
-// 登入
-function login(username, password) {
-  const account = getAccount();
+// ===== 登入 =====
+function login(user, pass){
+  const acc = getAccount();
 
-  if (!account) return "尚未註冊帳號";
+  if(!acc) return "尚未註冊";
 
-  if (username === account.username && password === account.password) {
+  if(user === acc.username && pass === acc.password){
     localStorage.setItem(LOGIN_KEY, "true");
     return "success";
   }
 
-  return "帳號或密碼錯誤";
+  return "錯誤帳號或密碼";
 }
 
-// 登出
-function logout() {
-  localStorage.removeItem(LOGIN_KEY);
-  location.reload();
-}
-
-// 解鎖畫面
-function unlockApp() {
+// ===== 開系統 =====
+function unlockApp(){
   document.getElementById("loginScreen").style.display = "none";
   document.getElementById("app").style.display = "block";
 }
 
-// 切換頁面
-function setTab(mode) {
-  const isLogin = mode === "login";
-
-  document.getElementById("loginForm").style.display = isLogin ? "block" : "none";
-  document.getElementById("registerForm").style.display = isLogin ? "none" : "block";
-
-  document.getElementById("showLoginTab").classList.toggle("active", isLogin);
-  document.getElementById("showRegisterTab").classList.toggle("active", !isLogin);
+// ===== 登出 =====
+function logout(){
+  localStorage.removeItem(LOGIN_KEY);
+  location.reload();
 }
 
 // ===== 登入 =====
-document.getElementById("loginForm").addEventListener("submit", function (e) {
+document.getElementById("loginForm").addEventListener("submit", function(e){
   e.preventDefault();
 
-  const user = document.getElementById("loginUsername").value.trim();
-  const pass = document.getElementById("loginPassword").value;
+  const u = document.getElementById("loginUsername").value.trim();
+  const p = document.getElementById("loginPassword").value;
   const msg = document.getElementById("loginError");
 
-  const result = login(user, pass);
+  const result = login(u, p);
 
-  if (result === "success") {
+  if(result === "success"){
     unlockApp();
-  } else {
+  }else{
     msg.textContent = result;
   }
 });
 
-// ===== 註冊 =====
-document.getElementById("registerForm").addEventListener("submit", function (e) {
+// ===== 註冊（重點在這裡）=====
+document.getElementById("registerForm").addEventListener("submit", function(e){
   e.preventDefault();
 
-  const user = document.getElementById("registerUsername").value.trim();
-  const pass = document.getElementById("registerPassword").value;
+  const u = document.getElementById("registerUsername").value.trim();
+  const p = document.getElementById("registerPassword").value;
   const msg = document.getElementById("registerError");
 
   msg.textContent = "";
 
-  if (user.length < 3) {
-    msg.textContent = "帳號至少3個字";
+  if(u.length < 3){
+    msg.textContent = "帳號至少3字";
     return;
   }
 
-  if (pass.length < 6) {
-    msg.textContent = "密碼至少6個字";
+  if(p.length < 6){
+    msg.textContent = "密碼至少6字";
     return;
   }
 
-  registerAccount(user, pass);
+  registerAccount(u, p);
 
   msg.style.color = "#2dd4bf";
-  msg.textContent = "註冊成功，請登入";
+  msg.textContent = "註冊成功，請去登入";
 });
 
-// tab
-document.getElementById("showLoginTab").onclick = () => setTab("login");
-document.getElementById("showRegisterTab").onclick = () => setTab("register");
+// ===== tab =====
+document.getElementById("showLoginTab").onclick = function(){
+  document.getElementById("loginForm").style.display = "block";
+  document.getElementById("registerForm").style.display = "none";
+};
 
-// 登出
+document.getElementById("showRegisterTab").onclick = function(){
+  document.getElementById("loginForm").style.display = "none";
+  document.getElementById("registerForm").style.display = "block";
+};
+
+// ===== 登出 =====
 document.getElementById("logoutBtn").onclick = logout;
 
-// 自動登入
-if (localStorage.getItem(LOGIN_KEY) === "true") {
+// ===== 自動登入 =====
+if(localStorage.getItem(LOGIN_KEY) === "true"){
   unlockApp();
 }
 
-// 預設
-setTab("login");
-
-});
 </script>
 
 </body>
