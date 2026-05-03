@@ -265,6 +265,31 @@ const chart = new Chart(ctx, {
         tension: 0.35
       }
     ]
+(() => {
+  const SENSOR_CHANNEL = 3271973;
+  const RELAY_CHANNEL = 3277178;
+  const RELAY_READ_KEY = 'GXZB8HZNOGR3U2SH';
+  const RELAY_WRITE_KEY = 'OIX0C2JRKET8RVKK';
+  const IR_WRITE_KEY = 'QQF8NVXGW6D8DKCM';
+  const GAS_WARN = 350;
+
+  const ACCOUNT_KEY = 'smarthome_account';
+  const DEFAULT_ACCOUNT = { username: 'admin', password: '123456' };
+
+  let irCounter = 0;
+  let sensorTimer = null;
+  let relayTimer = null;
+
+  function cleanupLegacyBlocks() {
+    const app = document.getElementById('app');
+    const login = document.getElementById('loginScreen');
+
+    document.querySelectorAll('body > .wrap').forEach((el) => {
+      if (el !== app) el.remove();
+    });
+
+    if (login) login.style.display = 'flex';
+    if (app) app.style.display = 'none';
   }
 });
 
@@ -273,23 +298,68 @@ async function getSensors() {
     const url = `https://api.thingspeak.com/channels/${SENSOR_CHANNEL}/feeds.json?results=20`;
     const res = await fetch(url, { cache: "no-store" });
     const data = await res.json();
+  function safeNumber(v) {
+    if (v === null || v === undefined || v === '') return null;
+    const n = Number(v);
+    return Number.isFinite(n) ? n : null;
+  }
 
     const feeds = Array.isArray(data.feeds) ? data.feeds : [];
     if (!feeds.length) return;
+  function setText(id, value, unit, digits) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (value === null) {
+      el.textContent = '--';
+      return;
+    }
+    el.textContent = unit ? `${value.toFixed(digits)} ${unit}` : value.toFixed(digits);
+  }
 
     const last = feeds[feeds.length - 1];
     const temp = safeNumber(last.field1);
     const humi = safeNumber(last.field2);
     const gas  = safeNumber(last.field3);
+  function setGasStatus(id, gas) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (gas === null) {
+      el.textContent = '等待資料';
+      el.className = 'warn';
+    } else if (gas >= GAS_WARN) {
+      el.textContent = '🚨 瓦斯超標';
+      el.className = 'danger';
+    } else {
+      el.textContent = '安全範圍';
+      el.className = 'safe';
+    }
+  }
 
     document.getElementById('temp').textContent =
       temp === null ? '--' : `${temp.toFixed(1)} °C`;
+  function getAccount() {
+    try {
+      const raw = localStorage.getItem(ACCOUNT_KEY);
+      if (!raw) return DEFAULT_ACCOUNT;
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.username && parsed.password) return parsed;
+    } catch (_) {}
+    return DEFAULT_ACCOUNT;
+  }
 
     document.getElementById('humi').textContent =
       humi === null ? '--' : `${humi.toFixed(1)} %`;
+  function saveAccount(username, password) {
+    try {
+      localStorage.setItem(ACCOUNT_KEY, JSON.stringify({ username, password }));
+    } catch (_) {}
+  }
 
     document.getElementById('gas').textContent =
       gas === null ? '--' : `${gas}`;
+  function unlockApp() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
 
     const tempStatus = document.getElementById('tempStatus');
     if (temp !== null && temp > TEMP_WARN) {
@@ -299,6 +369,8 @@ async function getSensors() {
       tempStatus.textContent = '正常監測中';
       tempStatus.className = 'status safe';
     }
+    getSensors();
+    getRelayState();
 
     const gasStatus = document.getElementById('gasStatus');
     const alertBanner = document.getElementById('alertBanner');
@@ -316,6 +388,8 @@ async function getSensors() {
       gasStatus.className = 'status warn';
       alertBanner.classList.remove('show');
     }
+    if (sensorTimer) clearInterval(sensorTimer);
+    if (relayTimer) clearInterval(relayTimer);
 
     chart.data.labels = feeds.map((_, i) => i + 1);
     chart.data.datasets[0].data = feeds.map(f => safeNumber(f.field1));
@@ -323,6 +397,8 @@ async function getSensors() {
     chart.update();
   } catch (e) {
     console.log("getSensors error:", e);
+    sensorTimer = setInterval(getSensors, 5000);
+    relayTimer = setInterval(getRelayState, 5000);
   }
 }
 
@@ -340,28 +416,28 @@ async function getRelayState() {
   } else {
     relayState.textContent = 'OFF';
     relayState.className = 'relay-state danger';
+
+  function logoutApp() {
+    if (sensorTimer) clearInterval(sensorTimer);
+    if (relayTimer) clearInterval(relayTimer);
+    sensorTimer = null;
+    relayTimer = null;
+
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('loginPassword').value = '';
+    document.getElementById('loginMsg').textContent = '';
+    window.scrollTo(0, 0);
   }
-(function(){
-var SENSOR_CHANNEL=3271973, RELAY_CHANNEL=3277178, RELAY_READ_KEY='GXZB8HZNOGR3U2SH', RELAY_WRITE_KEY='OIX0C2JRKET8RVKK', IR_WRITE_KEY='QQF8NVXGW6D8DKCM', GAS_WARN=350;
-var ACCOUNT_KEY='smarthome_account', DEFAULT_ACCOUNT={username:'admin',password:'123456'};
-var irCounter=0,sensorTimer=null,relayTimer=null;
-function cleanupLegacyBlocks(){
-  var app=document.getElementById('app');
-  var login=document.getElementById('loginScreen');
-  document.querySelectorAll('body > .wrap').forEach(function(el){
-    if(el!==app) el.remove();
-  });
-  document.querySelectorAll('#temp,#humi,#gas,#relayStateOld,#chartOld').forEach(function(el){
-    if(el && !app.contains(el)) el.remove();
-  });
-  if(login) login.style.display='flex';
-  if(app) app.style.display='none';
 }
 
 async function setRelay(value) {
   const url = `https://api.thingspeak.com/update?api_key=${RELAY_WRITE_KEY}&field1=${value}`;
   const res = await fetch(url);
   const result = await res.text();
+  const loginBtn = document.getElementById('loginBtn');
+  const registerBtn = document.getElementById('registerBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
 
   if (result === "0") {
     alert("Relay Channel 寫入失敗，請等 15 秒再試");
@@ -388,33 +464,131 @@ async function sendFan(baseCmd) {
     alert("IR Channel 寫入失敗，請等 15 秒再試");
   } else {
     alert("已送出 IR 命令：" + cmd);
+  cleanupLegacyBlocks();
+
+  loginBtn.addEventListener('click', () => {
+    const user = (document.getElementById('loginUsername').value || '').trim();
+    const pass = document.getElementById('loginPassword').value || '';
+    const msg = document.getElementById('loginMsg');
+    msg.style.color = '#fb7185';
+    msg.textContent = '';
+
+    const account = getAccount();
+    if (user === account.username && pass === account.password) {
+      unlockApp();
+    } else {
+      msg.textContent = '帳號或密碼錯誤';
+    }
+  });
+
+  registerBtn.addEventListener('click', () => {
+    const user = (document.getElementById('registerUsername').value || '').trim();
+    const pass = document.getElementById('registerPassword').value || '';
+    const msg = document.getElementById('registerMsg');
+
+    msg.style.color = '#fb7185';
+    msg.textContent = '';
+
+    if (user.length < 3) {
+      msg.textContent = '帳號至少需要 3 個字元';
+      return;
+    }
+    if (pass.length < 6) {
+      msg.textContent = '密碼至少需要 6 個字元';
+      return;
+    }
+
+    saveAccount(user, pass);
+    msg.style.color = '#2dd4bf';
+    msg.textContent = '註冊成功，請登入';
+    document.getElementById('registerUsername').value = '';
+    document.getElementById('registerPassword').value = '';
+  });
+
+  logoutBtn.addEventListener('click', logoutApp);
+
+  const chart = new Chart(document.getElementById('chart').getContext('2d'), {
+    type: 'line',
+    data: {
+      labels: [],
+      datasets: [
+        { label: '房間1 瓦斯', data: [], borderColor: '#fb7185', tension: 0.35 },
+        { label: '房間2 瓦斯', data: [], borderColor: '#2dd4bf', tension: 0.35 },
+      ],
+    },
+  });
+
+  async function getSensors() {
+    try {
+      const res = await fetch(`https://api.thingspeak.com/channels/${SENSOR_CHANNEL}/feeds.json?results=20`, { cache: 'no-store' });
+      const data = await res.json();
+      const feeds = Array.isArray(data.feeds) ? data.feeds : [];
+      if (!feeds.length) return;
+
+      const last = feeds[feeds.length - 1];
+      const r1t = safeNumber(last.field1);
+      const r1h = safeNumber(last.field2);
+      const r1g = safeNumber(last.field3);
+      const r2t = safeNumber(last.field4);
+      const r2h = safeNumber(last.field5);
+      const r2g = safeNumber(last.field6);
+
+      setText('r1temp', r1t, '°C', 1);
+      setText('r1humi', r1h, '%', 1);
+      setText('r1gas', r1g, '', 0);
+      setText('r2temp', r2t, '°C', 1);
+      setText('r2humi', r2h, '%', 1);
+      setText('r2gas', r2g, '', 0);
+
+      setGasStatus('r1gasStatus', r1g);
+      setGasStatus('r2gasStatus', r2g);
+
+      document.getElementById('alertBanner').style.display =
+        (r1g !== null && r1g >= GAS_WARN) || (r2g !== null && r2g >= GAS_WARN)
+          ? 'block'
+          : 'none';
+
+      chart.data.labels = feeds.map((_, i) => i + 1);
+      chart.data.datasets[0].data = feeds.map((f) => safeNumber(f.field3));
+      chart.data.datasets[1].data = feeds.map((f) => safeNumber(f.field6));
+      chart.update();
+    } catch (e) {
+      console.log(e);
+    }
   }
 }
 
 getSensors();
 getRelayState();
+  async function getRelayState() {
+    const res = await fetch(`https://api.thingspeak.com/channels/${RELAY_CHANNEL}/feeds/last.json?api_key=${RELAY_READ_KEY}`);
+    const data = await res.json();
+    const relay = data.field1 === '1' ? 1 : 0;
+    const el = document.getElementById('relayState');
+    el.textContent = relay === 1 ? 'ON' : 'OFF';
+    el.className = 'v ' + (relay === 1 ? 'safe' : 'danger');
+  }
 
 setInterval(getSensors, 5000);
 setInterval(getRelayState, 5000);
-function safeNumber(v){if(v===null||v===undefined||v==='')return null;var n=Number(v);return isFinite(n)?n:null}
-function setText(id,v,unit,d){var el=document.getElementById(id);if(!el)return;el.textContent=v===null?'--':(unit?v.toFixed(d)+' '+unit:v.toFixed(d))}
-function setGasStatus(id,g){var el=document.getElementById(id);if(!el)return;if(g===null){el.textContent='等待資料';el.className='warn'}else if(g>=GAS_WARN){el.textContent='🚨 瓦斯超標';el.className='danger'}else{el.textContent='安全範圍';el.className='safe'}}
-function getAccount(){try{var raw=localStorage.getItem(ACCOUNT_KEY);if(raw){var p=JSON.parse(raw);if(p&&p.username&&p.password)return p}}catch(e){}return DEFAULT_ACCOUNT}
-function saveAccount(u,p){try{localStorage.setItem(ACCOUNT_KEY,JSON.stringify({username:u,password:p}))}catch(e){}}
-function unlockApp(){document.getElementById('loginScreen').style.display='none';document.getElementById('app').style.display='block';getSensors();getRelayState();if(sensorTimer)clearInterval(sensorTimer);if(relayTimer)clearInterval(relayTimer);sensorTimer=setInterval(getSensors,5000);relayTimer=setInterval(getRelayState,5000)}
-function logoutApp(){if(sensorTimer)clearInterval(sensorTimer);if(relayTimer)clearInterval(relayTimer);sensorTimer=null;relayTimer=null;document.getElementById('app').style.display='none';document.getElementById('loginScreen').style.display='flex';document.getElementById('loginPassword').value='';document.getElementById('loginMsg').textContent='';window.scrollTo(0,0)}
+  window.setRelay = async function (value) {
+    const r = await fetch(`https://api.thingspeak.com/update?api_key=${RELAY_WRITE_KEY}&field1=${value}`);
+    const t = await r.text();
+    if (t === '0') alert('Relay 寫入失敗');
+    else setTimeout(getRelayState, 1500);
+  };
 
-var loginBtn=document.getElementById('loginBtn'), regBtn=document.getElementById('registerBtn'), logoutBtn=document.getElementById('logoutBtn');
-cleanupLegacyBlocks();
-loginBtn.addEventListener('click',function(){var u=(document.getElementById('loginUsername').value||'').trim(),p=document.getElementById('loginPassword').value||'',m=document.getElementById('loginMsg');m.style.color='#fb7185';m.textContent='';var a=getAccount();if(u===a.username&&p===a.password)unlockApp();else m.textContent='帳號或密碼錯誤';});
-regBtn.addEventListener('click',function(){var u=(document.getElementById('registerUsername').value||'').trim(),p=document.getElementById('registerPassword').value||'',m=document.getElementById('registerMsg');m.style.color='#fb7185';m.textContent='';if(u.length<3){m.textContent='帳號至少需要 3 個字元';return}if(p.length<6){m.textContent='密碼至少需要 6 個字元';return}saveAccount(u,p);m.style.color='#2dd4bf';m.textContent='註冊成功，請登入';document.getElementById('registerUsername').value='';document.getElementById('registerPassword').value='';});
-logoutBtn.addEventListener('click',logoutApp);
+  window.sendFan = async function (baseCmd) {
+    irCounter = (irCounter + 1) % 10;
+    const cmd = String(baseCmd) + String(irCounter);
+    const r = await fetch(`https://api.thingspeak.com/update?api_key=${IR_WRITE_KEY}&field1=${cmd}`);
+    const t = await r.text();
+    if (t === '0') alert('IR 寫入失敗');
+    else alert('已送出 IR 命令：' + cmd);
+  };
 
-var chart=new Chart(document.getElementById('chart').getContext('2d'),{type:'line',data:{labels:[],datasets:[{label:'房間1 瓦斯',data:[],borderColor:'#fb7185',tension:.35},{label:'房間2 瓦斯',data:[],borderColor:'#2dd4bf',tension:.35}]}});
-window.getSensors=async function(){try{var res=await fetch('https://api.thingspeak.com/channels/'+SENSOR_CHANNEL+'/feeds.json?results=20',{cache:'no-store'}),data=await res.json(),feeds=Array.isArray(data.feeds)?data.feeds:[];if(!feeds.length)return;var last=feeds[feeds.length-1],r1t=safeNumber(last.field1),r1h=safeNumber(last.field2),r1g=safeNumber(last.field3),r2t=safeNumber(last.field4),r2h=safeNumber(last.field5),r2g=safeNumber(last.field6);setText('r1temp',r1t,'°C',1);setText('r1humi',r1h,'%',1);setText('r1gas',r1g,'',0);setText('r2temp',r2t,'°C',1);setText('r2humi',r2h,'%',1);setText('r2gas',r2g,'',0);setGasStatus('r1gasStatus',r1g);setGasStatus('r2gasStatus',r2g);document.getElementById('alertBanner').style.display=((r1g!==null&&r1g>=GAS_WARN)||(r2g!==null&&r2g>=GAS_WARN))?'block':'none';chart.data.labels=feeds.map(function(_,i){return i+1});chart.data.datasets[0].data=feeds.map(function(f){return safeNumber(f.field3)});chart.data.datasets[1].data=feeds.map(function(f){return safeNumber(f.field6)});chart.update()}catch(e){console.log(e)}};
-window.getRelayState=async function(){var res=await fetch('https://api.thingspeak.com/channels/'+RELAY_CHANNEL+'/feeds/last.json?api_key='+RELAY_READ_KEY),data=await res.json(),relay=data.field1==='1'?1:0,el=document.getElementById('relayState');el.textContent=relay===1?'ON':'OFF';el.className='v '+(relay===1?'safe':'danger')};
-window.setRelay=async function(v){var r=await fetch('https://api.thingspeak.com/update?api_key='+RELAY_WRITE_KEY+'&field1='+v),t=await r.text();if(t==='0')alert('Relay 寫入失敗');else setTimeout(window.getRelayState,1500)};
-window.sendFan=async function(b){irCounter=(irCounter+1)%10;var cmd=String(b)+String(irCounter),r=await fetch('https://api.thingspeak.com/update?api_key='+IR_WRITE_KEY+'&field1='+cmd),t=await r.text();if(t==='0')alert('IR 寫入失敗');else alert('已送出 IR 命令：'+cmd)};
+  window.getSensors = getSensors;
+  window.getRelayState = getRelayState;
 })();
 </script>
 
