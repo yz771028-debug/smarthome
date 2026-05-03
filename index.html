@@ -3,79 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>雙房間智慧居家控制系統</title>
+<title>智慧居家控制系統</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-<!-- 先定義保底登入/註冊函式，避免主 script 失敗時按鈕無反應 -->
-<script>
-(function () {
-  const ACCOUNT_KEY = "smarthome_account";
-  const DEFAULT_ACCOUNT = { username: "admin", password: "123456" };
-
-  function getAccountSafe() {
-    try {
-      const raw = localStorage.getItem(ACCOUNT_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed && parsed.username && parsed.password) return parsed;
-      }
-    } catch (e) {}
-    return DEFAULT_ACCOUNT;
-  }
-
-  function unlockSafe() {
-    const login = document.getElementById("loginScreen");
-    const app = document.getElementById("app");
-    if (login && app) {
-      login.style.display = "none";
-      app.style.display = "block";
-    }
-    if (typeof window.getSensors === "function") window.getSensors();
-    if (typeof window.getRelayState === "function") window.getRelayState();
-  }
-
-  window.handleLogin = function () {
-    const user = (document.getElementById("loginUsername")?.value || "").trim();
-    const pass = document.getElementById("loginPassword")?.value || "";
-    const error = document.getElementById("loginError");
-    const account = getAccountSafe();
-    if (error) error.textContent = "";
-    if (user === account.username && pass === account.password) unlockSafe();
-    else if (error) error.textContent = "帳號或密碼錯誤，請重新輸入。";
-  };
-
-  window.handleRegister = function () {
-    const user = (document.getElementById("registerUsername")?.value || "").trim();
-    const pass = document.getElementById("registerPassword")?.value || "";
-    const msg = document.getElementById("registerError");
-    if (msg) { msg.style.color = "#fb7185"; msg.textContent = ""; }
-
-    if (user.length < 3) {
-      if (msg) msg.textContent = "帳號至少需要 3 個字元。";
-      return;
-    }
-    if (pass.length < 6) {
-      if (msg) msg.textContent = "密碼至少需要 6 個字元。";
-      return;
-    }
-
-    try {
-      localStorage.setItem(ACCOUNT_KEY, JSON.stringify({ username: user, password: pass }));
-    } catch (e) {}
-
-    if (msg) {
-      msg.style.color = "#2dd4bf";
-      msg.textContent = "註冊成功，請切換到登入頁登入。";
-    }
-
-    const ru = document.getElementById("registerUsername");
-    const rp = document.getElementById("registerPassword");
-    if (ru) ru.value = "";
-    if (rp) rp.value = "";
-  };
-})();
-</script>
-
 <style>
   :root{
     --bg:#0b1220;
@@ -95,10 +24,24 @@
     background:linear-gradient(180deg,#0b1220,#10192b);
     color:var(--text);
   }
-  .wrap{max-width:1150px;margin:0 auto;padding:24px 16px 40px;}
-  h1{margin:0 0 10px;font-size:32px;}
-  .subtitle{color:var(--muted);margin-bottom:20px;}
-  .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:16px;}
+  .wrap{
+    max-width:1100px;
+    margin:0 auto;
+    padding:24px 16px 40px;
+  }
+  h1{
+    margin:0 0 10px;
+    font-size:32px;
+  }
+  .subtitle{
+    color:var(--muted);
+    margin-bottom:20px;
+  }
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(12,1fr);
+    gap:16px;
+  }
   .card{
     grid-column:span 12;
     background:linear-gradient(180deg,var(--card),var(--card2));
@@ -107,23 +50,45 @@
     padding:18px;
     box-shadow:0 10px 30px rgba(0,0,0,.25);
   }
-  .room{grid-column:span 6;}
-  .title{font-size:20px;font-weight:bold;margin-bottom:14px;}
-  .sensor-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;}
+  .title{
+    font-size:20px;
+    font-weight:bold;
+    margin-bottom:14px;
+  }
+  .sensor-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:14px;
+  }
   .sensor-box{
     background:#0d1525;
     border:1px solid var(--line);
     border-radius:16px;
     padding:18px;
   }
-  .sensor-name{color:var(--muted);font-size:14px;margin-bottom:10px;}
-  .sensor-value{font-size:32px;font-weight:bold;}
-  .status{margin-top:8px;font-size:14px;font-weight:bold;}
-  .safe{color:var(--good);}
-  .warn{color:var(--warn);}
-  .danger{color:var(--danger);}
-  .control-row{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;}
-  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;}
+  .sensor-name{
+    color:var(--muted);
+    font-size:14px;
+    margin-bottom:10px;
+  }
+  .sensor-value{
+    font-size:38px;
+    font-weight:bold;
+  }
+  .status{
+    margin-top:8px;
+    font-size:14px;
+    font-weight:bold;
+  }
+  .safe{ color:var(--good); }
+  .warn{ color:var(--warn); }
+  .danger{ color:var(--danger); }
+  .control-row{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+    justify-content:center;
+  }
   button{
     border:none;
     border-radius:12px;
@@ -134,7 +99,11 @@
     background:#2563eb;
     color:white;
   }
-  .relay-state{font-size:40px;font-weight:bold;margin:10px 0 16px;text-align:center;}
+  .relay-state{
+    font-size:40px;
+    font-weight:bold;
+    margin:10px 0 16px;
+  }
   .chart-box{
     background:#0d1525;
     border:1px solid var(--line);
@@ -151,105 +120,59 @@
     color:var(--danger);
     border:1px solid rgba(251,113,133,.35);
   }
-  .show{display:block;}
-
-  .login-screen{
-    min-height:100vh;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:20px;
-  }
-  .login-card{
-    width:min(420px,100%);
-    background:linear-gradient(180deg,var(--card),var(--card2));
-    border:1px solid var(--line);
-    border-radius:18px;
-    padding:22px;
-    box-shadow:0 10px 30px rgba(0,0,0,.25);
-  }
-  .form-group{margin-bottom:12px;}
-  label{display:block;margin-bottom:6px;color:var(--muted);}
-  input{
-    width:100%;
-    border:1px solid var(--line);
-    border-radius:10px;
-    background:#0d1525;
-    color:var(--text);
-    padding:10px 12px;
-    font-size:15px;
-  }
-  .error-msg{margin-top:10px;color:var(--danger);font-size:14px;min-height:20px;}
-
-  @media (max-width:900px){
-    .room{grid-column:span 12;}
-    .sensor-grid{grid-template-columns:1fr;}
-  }
+  .show{ display:block; }
 </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>雙房間智慧居家控制系統</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body{margin:0;font-family:Arial,"Microsoft JhengHei",sans-serif;background:#0b1220;color:#eef4ff}
+    .wrap{max-width:1100px;margin:0 auto;padding:24px 16px}
+    .card{background:#131c2f;border:1px solid #24324f;border-radius:14px;padding:16px;margin-bottom:14px}
+    .grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .sensor{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+    .box{background:#0d1525;border:1px solid #24324f;border-radius:10px;padding:10px}
+    .v{font-size:28px;font-weight:bold}.safe{color:#2dd4bf}.danger{color:#fb7185}.warn{color:#facc15}
+    .login{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+    .login-card{width:min(420px,100%);background:#131c2f;border:1px solid #24324f;border-radius:14px;padding:18px}
+    input{width:100%;padding:10px;border-radius:8px;border:1px solid #24324f;background:#0d1525;color:#eef4ff;margin:6px 0 10px}
+    button{padding:10px 14px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:bold;cursor:pointer}
+    .err{min-height:20px;font-size:14px}.row{display:flex;gap:8px;flex-wrap:wrap}
+    #app{display:none}
+    @media(max-width:900px){.grid{grid-template-columns:1fr}.sensor{grid-template-columns:1fr}}
+  </style>
 </head>
 <body>
 
-<div id="loginScreen" class="login-screen">
-  <div class="login-card">
-    <h2>系統登入</h2>
-    <div class="subtitle">可先註冊帳號與自訂密碼，再登入系統</div>
-
-    <div id="loginForm">
-      <div class="form-group">
-        <label for="loginUsername">帳號</label>
-        <input id="loginUsername" type="text" autocomplete="username" required>
-      </div>
-      <div class="form-group">
-        <label for="loginPassword">密碼</label>
-        <input id="loginPassword" type="password" autocomplete="current-password" required>
-      </div>
-      <button type="button" onclick="handleLogin()">登入</button>
-      <div id="loginError" class="error-msg"></div>
-    </div>
-
-    <hr style="border-color:#24324f; opacity:.5; margin:18px 0;">
-    <h3 style="margin:0 0 10px;">註冊新帳號</h3>
-
-    <div id="registerForm">
-      <div class="form-group">
-        <label for="registerUsername">新帳號</label>
-        <input id="registerUsername" type="text" autocomplete="username" required>
-      </div>
-      <div class="form-group">
-        <label for="registerPassword">新密碼</label>
-        <input id="registerPassword" type="password" autocomplete="new-password" required>
-      </div>
-      <button type="button" onclick="handleRegister()">建立帳號</button>
-      <div id="registerError" class="error-msg"></div>
-    </div>
-  </div>
-</div>
-
-<div id="app" class="wrap" style="display:none;">
-  <div class="topbar">
-    <h1>雙房間智慧居家控制系統</h1>
-    <button id="logoutBtn" type="button">登出</button>
-  </div>
-  <div class="subtitle">Room 1 + Room 2 環境監控、瓦斯警報、Relay 風扇、IR 風扇控制</div>
+<div class="wrap">
+  <h1>智慧居家控制系統</h1>
+  <div class="subtitle">溫溼度、瓦斯監測、Relay 風扇 A、紅外線風扇 B、蜂鳴器警報</div>
 
   <div id="alertBanner" class="alert-banner">🚨 瓦斯濃度超過 350，系統已進入警報狀態</div>
 
   <div class="grid">
-    <div class="card room">
-      <div class="title">房間 1</div>
-      <div class="sensor-grid">
-        <div class="sensor-box"><div class="sensor-name">溫度</div><div id="r1temp" class="sensor-value">--</div></div>
-        <div class="sensor-box"><div class="sensor-name">濕度</div><div id="r1humi" class="sensor-value">--</div></div>
-        <div class="sensor-box"><div class="sensor-name">瓦斯</div><div id="r1gas" class="sensor-value">--</div><div id="r1gasStatus" class="status"></div></div>
-      </div>
-    </div>
 
-    <div class="card room">
-      <div class="title">房間 2</div>
+    <div class="card">
+      <div class="title">即時感測器數據</div>
       <div class="sensor-grid">
-        <div class="sensor-box"><div class="sensor-name">溫度</div><div id="r2temp" class="sensor-value">--</div></div>
-        <div class="sensor-box"><div class="sensor-name">濕度</div><div id="r2humi" class="sensor-value">--</div></div>
-        <div class="sensor-box"><div class="sensor-name">瓦斯</div><div id="r2gas" class="sensor-value">--</div><div id="r2gasStatus" class="status"></div></div>
+        <div class="sensor-box">
+          <div class="sensor-name">溫度</div>
+          <div id="temp" class="sensor-value">--</div>
+          <div id="tempStatus" class="status"></div>
+        </div>
+
+        <div class="sensor-box">
+          <div class="sensor-name">濕度</div>
+          <div id="humi" class="sensor-value">--</div>
+          <div class="status safe">正常監測中</div>
+        </div>
+
+        <div class="sensor-box">
+          <div class="sensor-name">瓦斯</div>
+          <div id="gas" class="sensor-value">--</div>
+          <div id="gasStatus" class="status"></div>
+        </div>
       </div>
     </div>
 
@@ -271,184 +194,256 @@
         <button onclick="sendFan(4)">風量-</button>
         <button onclick="sendFan(5)">擺頭</button>
       </div>
+  <div id="loginScreen" class="login">
+    <div class="login-card">
+      <h2>系統登入</h2>
+      <label>帳號</label><input id="loginUsername" type="text" />
+      <label>密碼</label><input id="loginPassword" type="password" />
+      <button id="loginBtn" type="button">登入</button>
+      <div id="loginError" class="err"></div>
+      <hr style="border-color:#24324f;opacity:.5;margin:16px 0" />
+      <h3>註冊新帳號</h3>
+      <label>新帳號</label><input id="registerUsername" type="text" />
+      <label>新密碼</label><input id="registerPassword" type="password" />
+      <button id="registerBtn" type="button">建立帳號</button>
+      <div id="registerError" class="err"></div>
     </div>
+  </div>
 
     <div class="card">
-      <div class="title">最近 20 筆瓦斯趨勢</div>
-      <div class="chart-box"><canvas id="chart" height="110"></canvas></div>
+      <div class="title">最近 20 筆感測圖表</div>
+      <div class="chart-box">
+        <canvas id="chart" height="110"></canvas>
+      </div>
+  <div id="app" class="wrap">
+    <div class="card"><div class="row" style="justify-content:space-between"><h1 style="margin:0">雙房間智慧居家控制系統</h1><button id="logoutBtn" type="button">登出</button></div></div>
+    <div id="alertBanner" class="card danger" style="display:none">🚨 瓦斯濃度超過 350</div>
+    <div class="grid">
+      <div class="card"><h3>房間 1</h3><div class="sensor"><div class="box"><div>溫度</div><div id="r1temp" class="v">--</div></div><div class="box"><div>濕度</div><div id="r1humi" class="v">--</div></div><div class="box"><div>瓦斯</div><div id="r1gas" class="v">--</div><div id="r1gasStatus"></div></div></div></div>
+      <div class="card"><h3>房間 2</h3><div class="sensor"><div class="box"><div>溫度</div><div id="r2temp" class="v">--</div></div><div class="box"><div>濕度</div><div id="r2humi" class="v">--</div></div><div class="box"><div>瓦斯</div><div id="r2gas" class="v">--</div><div id="r2gasStatus"></div></div></div></div>
     </div>
+
+    <div class="card"><h3>Relay 風扇 A</h3><div id="relayState" class="v">讀取中...</div><div class="row"><button onclick="setRelay(1)">開啟</button><button onclick="setRelay(0)">關閉</button></div></div>
+    <div class="card"><h3>紅外線風扇 B</h3><div class="row"><button onclick="sendFan(1)">開</button><button onclick="sendFan(2)">關</button><button onclick="sendFan(3)">風量+</button><button onclick="sendFan(4)">風量-</button><button onclick="sendFan(5)">擺頭</button></div></div>
+    <div class="card"><h3>最近 20 筆瓦斯趨勢</h3><canvas id="chart" height="110"></canvas></div>
   </div>
 </div>
 
 <script>
 const SENSOR_CHANNEL = 3271973;
+
+// Relay Channel
 const RELAY_CHANNEL = 3277178;
 const RELAY_READ_KEY = "GXZB8HZNOGR3U2SH";
 const RELAY_WRITE_KEY = "OIX0C2JRKET8RVKK";
+
+// IR Channel
 const IR_CHANNEL = 3298830;
 const IR_WRITE_KEY = "QQF8NVXGW6D8DKCM";
+
+const TEMP_WARN = 35;
 const GAS_WARN = 350;
 
 let irCounter = 0;
-const ACCOUNT_KEY = "smarthome_account";
-const DEFAULT_ACCOUNT = { username: "admin", password: "123456" };
-let memoryAccount = null;
 
-function safeNumber(v){
-  if(v===null||v===undefined||v==="") return null;
-  const n=Number(v);
-  return Number.isFinite(n)?n:null;
-}
-function setText(id, value, unit, digits){
-  const el=document.getElementById(id);
-  if(value===null){ el.textContent='--'; }
-  else if(unit){ el.textContent=`${value.toFixed(digits)} ${unit}`; }
-  else{ el.textContent=`${value.toFixed(digits)}`; }
-}
-function setGasStatus(id, gas){
-  const el=document.getElementById(id);
-  if(gas===null){ el.textContent='等待資料'; el.className='status warn'; }
-  else if(gas>=GAS_WARN){ el.textContent='🚨 瓦斯超標'; el.className='status danger'; }
-  else { el.textContent='安全範圍'; el.className='status safe'; }
+function safeNumber(v) {
+  if (v === null || v === undefined || v === "") return null;
+  const n = Number(v);
+  return Number.isFinite(n) ? n : null;
 }
 
-var chartCtx = document.getElementById('chart').getContext('2d');
-if (window.__smarthomeChart) window.__smarthomeChart.destroy();
-var chart = window.__smarthomeChart = new Chart(chartCtx, {
-  type:'line',
-  data:{
-    labels:[],
-    datasets:[
-      {label:'房間1 瓦斯',data:[],borderColor:'#fb7185',tension:0.35},
-      {label:'房間2 瓦斯',data:[],borderColor:'#2dd4bf',tension:0.35}
+const ctx = document.getElementById('chart').getContext('2d');
+const chart = new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [
+      {
+        label: '溫度 °C',
+        data: [],
+        borderColor: '#2dd4bf',
+        tension: 0.35
+      },
+      {
+        label: '瓦斯',
+        data: [],
+        borderColor: '#fb7185',
+        tension: 0.35
+      }
     ]
   }
 });
 
-async function getSensors(){
-  try{
-    const url=`https://api.thingspeak.com/channels/${SENSOR_CHANNEL}/feeds.json?results=20`;
-    const res=await fetch(url,{cache:'no-store'});
-    const data=await res.json();
+async function getSensors() {
+  try {
+    const url = `https://api.thingspeak.com/channels/${SENSOR_CHANNEL}/feeds.json?results=20`;
+    const res = await fetch(url, { cache: "no-store" });
+    const data = await res.json();
 
-    const feeds=Array.isArray(data.feeds)?data.feeds:[];
-    if(!feeds.length) return;
+    const feeds = Array.isArray(data.feeds) ? data.feeds : [];
+    if (!feeds.length) return;
 
-    const last=feeds[feeds.length-1];
-    const r1t=safeNumber(last.field1), r1h=safeNumber(last.field2), r1g=safeNumber(last.field3);
-    const r2t=safeNumber(last.field4), r2h=safeNumber(last.field5), r2g=safeNumber(last.field6);
+    const last = feeds[feeds.length - 1];
+    const temp = safeNumber(last.field1);
+    const humi = safeNumber(last.field2);
+    const gas  = safeNumber(last.field3);
 
-    setText('r1temp',r1t,'°C',1);
-    setText('r1humi',r1h,'%',1);
-    setText('r1gas',r1g,'',0);
+    document.getElementById('temp').textContent =
+      temp === null ? '--' : `${temp.toFixed(1)} °C`;
 
-    setText('r2temp',r2t,'°C',1);
-    setText('r2humi',r2h,'%',1);
-    setText('r2gas',r2g,'',0);
+    document.getElementById('humi').textContent =
+      humi === null ? '--' : `${humi.toFixed(1)} %`;
 
-    setGasStatus('r1gasStatus',r1g);
-    setGasStatus('r2gasStatus',r2g);
+    document.getElementById('gas').textContent =
+      gas === null ? '--' : `${gas}`;
 
-    const alertBanner=document.getElementById('alertBanner');
-    if((r1g!==null&&r1g>=GAS_WARN)||(r2g!==null&&r2g>=GAS_WARN)) alertBanner.classList.add('show');
-    else alertBanner.classList.remove('show');
-
-    chart.data.labels=feeds.map((_,i)=>i+1);
-    chart.data.datasets[0].data=feeds.map(f=>safeNumber(f.field3));
-    chart.data.datasets[1].data=feeds.map(f=>safeNumber(f.field6));
-    chart.update();
-  }catch(e){
-    console.log('getSensors error:',e);
-  }
-}
-
-async function getRelayState(){
-  const url=`https://api.thingspeak.com/channels/${RELAY_CHANNEL}/feeds/last.json?api_key=${RELAY_READ_KEY}`;
-  const res=await fetch(url);
-  const data=await res.json();
-
-  const relay=data.field1==="1"?1:0;
-  const relayState=document.getElementById('relayState');
-  if(relay===1){ relayState.textContent='ON'; relayState.className='relay-state safe'; }
-  else { relayState.textContent='OFF'; relayState.className='relay-state danger'; }
-}
-
-async function setRelay(value){
-  const url=`https://api.thingspeak.com/update?api_key=${RELAY_WRITE_KEY}&field1=${value}`;
-  const res=await fetch(url);
-  const result=await res.text();
-  if(result==="0") alert("Relay Channel 寫入失敗，請等 15 秒再試");
-  else setTimeout(getRelayState,1500);
-}
-
-async function sendFan(baseCmd){
-  irCounter=(irCounter+1)%10;
-  const cmd=String(baseCmd)+String(irCounter);
-  const url=`https://api.thingspeak.com/update?api_key=${IR_WRITE_KEY}&field1=${cmd}`;
-  const res=await fetch(url);
-  const result=await res.text();
-  if(result==="0") alert("IR Channel 寫入失敗，請等 15 秒再試");
-  else alert("已送出 IR 命令："+cmd);
-}
-
-function unlockApp(){
-  document.getElementById('loginScreen').style.display='none';
-  document.getElementById('app').style.display='block';
-  getSensors();
-  getRelayState();
-  setInterval(getSensors,5000);
-  setInterval(getRelayState,5000);
-}
-
-function getAccount(){
-  try{
-    const raw=localStorage.getItem(ACCOUNT_KEY);
-    if(raw){
-      const parsed=JSON.parse(raw);
-      if(parsed&&parsed.username&&parsed.password) return parsed;
+    const tempStatus = document.getElementById('tempStatus');
+    if (temp !== null && temp > TEMP_WARN) {
+      tempStatus.textContent = '⚠ 溫度過高';
+      tempStatus.className = 'status warn';
+    } else {
+      tempStatus.textContent = '正常監測中';
+      tempStatus.className = 'status safe';
     }
-  }catch(e){
-    console.log('account read error:',e);
+
+    const gasStatus = document.getElementById('gasStatus');
+    const alertBanner = document.getElementById('alertBanner');
+
+    if (gas !== null && gas >= GAS_WARN) {
+      gasStatus.textContent = '🚨 瓦斯超標';
+      gasStatus.className = 'status danger';
+      alertBanner.classList.add('show');
+    } else if (gas !== null) {
+      gasStatus.textContent = '安全範圍';
+      gasStatus.className = 'status safe';
+      alertBanner.classList.remove('show');
+    } else {
+      gasStatus.textContent = '等待資料';
+      gasStatus.className = 'status warn';
+      alertBanner.classList.remove('show');
+    }
+
+    chart.data.labels = feeds.map((_, i) => i + 1);
+    chart.data.datasets[0].data = feeds.map(f => safeNumber(f.field1));
+    chart.data.datasets[1].data = feeds.map(f => safeNumber(f.field3));
+    chart.update();
+  } catch (e) {
+    console.log("getSensors error:", e);
   }
-  return memoryAccount||DEFAULT_ACCOUNT;
 }
 
-function saveAccount(account){
-  memoryAccount=account;
-  try{
-    localStorage.setItem(ACCOUNT_KEY,JSON.stringify(account));
-  }catch(e){
-    console.log('account save error:',e);
+async function getRelayState() {
+  const url = `https://api.thingspeak.com/channels/${RELAY_CHANNEL}/feeds/last.json?api_key=${RELAY_READ_KEY}`;
+  const res = await fetch(url);
+  const data = await res.json();
+
+  const relay = data.field1 === "1" ? 1 : 0;
+  const relayState = document.getElementById('relayState');
+
+  if (relay === 1) {
+    relayState.textContent = 'ON';
+    relayState.className = 'relay-state safe';
+  } else {
+    relayState.textContent = 'OFF';
+    relayState.className = 'relay-state danger';
   }
 }
 
-/* 主 script 內再掛一次，確保 inline onclick 可用 */
-window.handleLogin = function handleLogin(){
-  const user=document.getElementById('loginUsername').value.trim();
-  const pass=document.getElementById('loginPassword').value;
-  const error=document.getElementById('loginError');
-  error.textContent='';
-  const account=getAccount();
-  if(user===account.username&&pass===account.password) unlockApp();
-  else error.textContent='帳號或密碼錯誤，請重新輸入。';
-};
+async function setRelay(value) {
+  const url = `https://api.thingspeak.com/update?api_key=${RELAY_WRITE_KEY}&field1=${value}`;
+  const res = await fetch(url);
+  const result = await res.text();
 
-window.handleRegister = function handleRegister(){
-  const user=document.getElementById('registerUsername').value.trim();
-  const pass=document.getElementById('registerPassword').value;
-  const msg=document.getElementById('registerError');
-  msg.style.color='#fb7185';
-  msg.textContent='';
-  if(user.length<3){ msg.textContent='帳號至少需要 3 個字元。'; return; }
-  if(pass.length<6){ msg.textContent='密碼至少需要 6 個字元。'; return; }
-  saveAccount({username:user,password:pass});
-  msg.style.color='#2dd4bf';
-  msg.textContent='註冊成功，請切換到登入頁登入。';
-  document.getElementById('registerUsername').value='';
-  document.getElementById('registerPassword').value='';
-};
+  if (result === "0") {
+    alert("Relay Channel 寫入失敗，請等 15 秒再試");
+  } else {
+    setTimeout(getRelayState, 1500);
+  }
+}
 
-document.getElementById('logoutBtn').onclick=()=>location.reload();
+// baseCmd:
+// 1=開
+// 2=關
+// 3=風量+
+// 4=風量-
+// 5=擺頭
+async function sendFan(baseCmd) {
+  irCounter = (irCounter + 1) % 10;
+  const cmd = String(baseCmd) + String(irCounter);
+
+  const url = `https://api.thingspeak.com/update?api_key=${IR_WRITE_KEY}&field1=${cmd}`;
+  const res = await fetch(url);
+  const result = await res.text();
+
+  if (result === "0") {
+    alert("IR Channel 寫入失敗，請等 15 秒再試");
+  } else {
+    alert("已送出 IR 命令：" + cmd);
+  }
+}
+
+getSensors();
+getRelayState();
+
+setInterval(getSensors, 5000);
+setInterval(getRelayState, 5000);
+(function(){
+  var SENSOR_CHANNEL=3271973, RELAY_CHANNEL=3277178, RELAY_READ_KEY='GXZB8HZNOGR3U2SH', RELAY_WRITE_KEY='OIX0C2JRKET8RVKK', IR_WRITE_KEY='QQF8NVXGW6D8DKCM', GAS_WARN=350;
+  var ACCOUNT_KEY='smarthome_account', DEFAULT_ACCOUNT={username:'admin', password:'123456'}, irCounter=0;
+  function safeNumber(v){if(v===null||v===undefined||v==='') return null; var n=Number(v); return isFinite(n)?n:null;}
+  function setText(id,val,unit,d){var el=document.getElementById(id); if(!el)return; el.textContent=(val===null)?'--':(unit?val.toFixed(d)+' '+unit:val.toFixed(d));}
+  function setGasStatus(id,gas){var el=document.getElementById(id); if(!el)return; if(gas===null){el.textContent='等待資料';el.className='warn';} else if(gas>=GAS_WARN){el.textContent='🚨 瓦斯超標';el.className='danger';} else {el.textContent='安全範圍';el.className='safe';}}
+  function getAccount(){try{var raw=localStorage.getItem(ACCOUNT_KEY); if(raw){var p=JSON.parse(raw); if(p&&p.username&&p.password) return p;}}catch(e){} return DEFAULT_ACCOUNT;}
+  function saveAccount(a){try{localStorage.setItem(ACCOUNT_KEY,JSON.stringify(a));}catch(e){}}
+  function unlockApp(){document.getElementById('loginScreen').style.display='none';document.getElementById('app').style.display='block';getSensors();getRelayState();setInterval(getSensors,5000);setInterval(getRelayState,5000);}
+
+  document.getElementById('loginBtn').addEventListener('click', function(){
+    var user=(document.getElementById('loginUsername').value||'').trim();
+    var pass=document.getElementById('loginPassword').value||'';
+    var err=document.getElementById('loginError'); err.textContent='';
+    var a=getAccount();
+    if(user===a.username && pass===a.password) unlockApp(); else err.textContent='帳號或密碼錯誤，請重新輸入。';
+  });
+  document.getElementById('registerBtn').addEventListener('click', function(){
+    var user=(document.getElementById('registerUsername').value||'').trim();
+    var pass=document.getElementById('registerPassword').value||'';
+    var msg=document.getElementById('registerError'); msg.className='err'; msg.textContent='';
+    if(user.length<3){msg.textContent='帳號至少需要 3 個字元。';return;}
+    if(pass.length<6){msg.textContent='密碼至少需要 6 個字元。';return;}
+    saveAccount({username:user,password:pass});
+    msg.textContent='註冊成功，請使用新帳號登入。'; msg.style.color='#2dd4bf';
+    document.getElementById('registerUsername').value=''; document.getElementById('registerPassword').value='';
+  });
+  document.getElementById('logoutBtn').addEventListener('click', function(){location.reload();});
+
+  var chartCtx=document.getElementById('chart').getContext('2d');
+  var chart=new Chart(chartCtx,{type:'line',data:{labels:[],datasets:[{label:'房間1 瓦斯',data:[],borderColor:'#fb7185',tension:.35},{label:'房間2 瓦斯',data:[],borderColor:'#2dd4bf',tension:.35}]}});
+
+  window.getSensors=async function(){
+    try{
+      var res=await fetch('https://api.thingspeak.com/channels/'+SENSOR_CHANNEL+'/feeds.json?results=20',{cache:'no-store'});
+      var data=await res.json(); var feeds=Array.isArray(data.feeds)?data.feeds:[]; if(!feeds.length)return;
+      var last=feeds[feeds.length-1];
+      var r1t=safeNumber(last.field1),r1h=safeNumber(last.field2),r1g=safeNumber(last.field3),r2t=safeNumber(last.field4),r2h=safeNumber(last.field5),r2g=safeNumber(last.field6);
+      setText('r1temp',r1t,'°C',1); setText('r1humi',r1h,'%',1); setText('r1gas',r1g,'',0);
+      setText('r2temp',r2t,'°C',1); setText('r2humi',r2h,'%',1); setText('r2gas',r2g,'',0);
+      setGasStatus('r1gasStatus',r1g); setGasStatus('r2gasStatus',r2g);
+      document.getElementById('alertBanner').style.display=((r1g!==null&&r1g>=GAS_WARN)||(r2g!==null&&r2g>=GAS_WARN))?'block':'none';
+      chart.data.labels=feeds.map(function(_,i){return i+1;});
+      chart.data.datasets[0].data=feeds.map(function(f){return safeNumber(f.field3);});
+      chart.data.datasets[1].data=feeds.map(function(f){return safeNumber(f.field6);});
+      chart.update();
+    }catch(e){console.log('getSensors error',e);}
+  };
+
+  window.getRelayState=async function(){
+    var res=await fetch('https://api.thingspeak.com/channels/'+RELAY_CHANNEL+'/feeds/last.json?api_key='+RELAY_READ_KEY);
+    var data=await res.json(); var relay=(data.field1==='1')?1:0; var el=document.getElementById('relayState');
+    el.textContent=relay===1?'ON':'OFF'; el.className='v '+(relay===1?'safe':'danger');
+  };
+  window.setRelay=async function(value){var r=await fetch('https://api.thingspeak.com/update?api_key='+RELAY_WRITE_KEY+'&field1='+value);var t=await r.text(); if(t==='0') alert('Relay 寫入失敗'); else setTimeout(window.getRelayState,1500);};
+  window.sendFan=async function(baseCmd){irCounter=(irCounter+1)%10;var cmd=String(baseCmd)+String(irCounter);var r=await fetch('https://api.thingspeak.com/update?api_key='+IR_WRITE_KEY+'&field1='+cmd);var t=await r.text(); if(t==='0') alert('IR 寫入失敗'); else alert('已送出 IR 命令：'+cmd);};
+})();
 </script>
 
 </body>
