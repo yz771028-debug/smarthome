@@ -395,7 +395,25 @@ setInterval(getRelayState, 5000);
   function setGasStatus(id,gas){var el=document.getElementById(id); if(!el)return; if(gas===null){el.textContent='等待資料';el.className='warn';} else if(gas>=GAS_WARN){el.textContent='🚨 瓦斯超標';el.className='danger';} else {el.textContent='安全範圍';el.className='safe';}}
   function getAccount(){try{var raw=localStorage.getItem(ACCOUNT_KEY); if(raw){var p=JSON.parse(raw); if(p&&p.username&&p.password) return p;}}catch(e){} return DEFAULT_ACCOUNT;}
   function saveAccount(a){try{localStorage.setItem(ACCOUNT_KEY,JSON.stringify(a));}catch(e){}}
-  function unlockApp(){document.getElementById('loginScreen').style.display='none';document.getElementById('app').style.display='block';getSensors();getRelayState();setInterval(getSensors,5000);setInterval(getRelayState,5000);}
+  var sensorTimer=null, relayTimer=null;
+  function unlockApp(){
+    document.getElementById('loginScreen').style.display='none';
+    document.getElementById('app').style.display='block';
+    getSensors();getRelayState();
+    if(sensorTimer) clearInterval(sensorTimer);
+    if(relayTimer) clearInterval(relayTimer);
+    sensorTimer=setInterval(getSensors,5000);
+    relayTimer=setInterval(getRelayState,5000);
+  }
+  function logoutApp(){
+    if(sensorTimer) clearInterval(sensorTimer);
+    if(relayTimer) clearInterval(relayTimer);
+    sensorTimer=null; relayTimer=null;
+    document.getElementById('app').style.display='none';
+    document.getElementById('loginScreen').style.display='flex';
+    document.getElementById('loginPassword').value='';
+    document.getElementById('loginError').textContent='';
+  }
 
   document.getElementById('loginBtn').addEventListener('click', function(){
     var user=(document.getElementById('loginUsername').value||'').trim();
@@ -414,7 +432,7 @@ setInterval(getRelayState, 5000);
     msg.textContent='註冊成功，請使用新帳號登入。'; msg.style.color='#2dd4bf';
     document.getElementById('registerUsername').value=''; document.getElementById('registerPassword').value='';
   });
-  document.getElementById('logoutBtn').addEventListener('click', function(){location.reload();});
+  document.getElementById('logoutBtn').addEventListener('click', logoutApp);
 
   var chartCtx=document.getElementById('chart').getContext('2d');
   var chart=new Chart(chartCtx,{type:'line',data:{labels:[],datasets:[{label:'房間1 瓦斯',data:[],borderColor:'#fb7185',tension:.35},{label:'房間2 瓦斯',data:[],borderColor:'#2dd4bf',tension:.35}]}});
