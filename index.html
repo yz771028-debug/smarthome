@@ -140,16 +140,29 @@ input{width:100%;padding:10px;border-radius:8px;border:1px solid var(--line);bac
 <body>
 <div id="loginScreen">
   <div class="login-card">
-    <h2>系統登入</h2>
-    <label>帳號</label><input id="loginUsername" type="text">
-    <label>密碼</label><input id="loginPassword" type="password">
-    <button id="loginBtn" type="button">登入</button>
+    <h2>智慧居家系統</h2>
+    <p class="login-subtitle">請先登入後進入控制介面</p>
+
+    <label>帳號</label>
+    <input id="loginUsername" type="text" placeholder="請輸入帳號">
+
+    <label>密碼</label>
+    <input id="loginPassword" type="password" placeholder="請輸入密碼">
+
+    <button id="loginBtn" class="login-main-btn">登入</button>
     <div id="loginMsg" class="msg"></div>
-    <hr style="border-color:#24324f;opacity:.5;margin:14px 0">
-    <h3 style="margin:0 0 10px">註冊</h3>
-    <label>新帳號</label><input id="registerUsername" type="text">
-    <label>新密碼</label><input id="registerPassword" type="password">
-    <button id="registerBtn" type="button">建立帳號</button>
+
+    <div class="divider"></div>
+
+    <h3>建立新帳號</h3>
+
+    <label>新帳號</label>
+    <input id="registerUsername" type="text" placeholder="至少 3 個字元">
+
+    <label>新密碼</label>
+    <input id="registerPassword" type="password" placeholder="至少 6 個字元">
+
+    <button id="registerBtn" class="register-btn">建立帳號</button>
     <div id="registerMsg" class="msg"></div>
   </div>
 </div>
