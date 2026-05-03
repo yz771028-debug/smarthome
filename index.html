@@ -293,9 +293,6 @@ function safeNumber(v) {
   const n = Number(v);
   return Number.isFinite(n) ? n : null;
 }
-const ACCOUNT_KEY = "smarthome_account";
-const DEFAULT_ACCOUNT = { username: "admin", password: "123456" };
-let memoryAccount = null;
 
 const ctx = document.getElementById('chart').getContext('2d');
 const chart = new Chart(ctx, {
@@ -318,15 +315,18 @@ const chart = new Chart(ctx, {
     ]
   }
 });
-function safeNumber(v){if(v===null||v===undefined||v==="")return null;const n=Number(v);return Number.isFinite(n)?n:null;}
-function setText(id, value, unit, digits){const el=document.getElementById(id);if(value===null){el.textContent='--';}else if(unit){el.textContent=`${value.toFixed(digits)} ${unit}`;}else{el.textContent=`${value.toFixed(digits)}`;}}
-function setGasStatus(id, gas){const el=document.getElementById(id);if(gas===null){el.textContent='等待資料';el.className='status warn';}else if(gas>=GAS_WARN){el.textContent='🚨 瓦斯超標';el.className='status danger';}else{el.textContent='安全範圍';el.className='status safe';}}
+const ACCOUNT_KEY = "smarthome_account";
+const DEFAULT_ACCOUNT = { username: "admin", password: "123456" };
+let memoryAccount = null;
 
 async function getSensors() {
   try {
     const url = `https://api.thingspeak.com/channels/${SENSOR_CHANNEL}/feeds.json?results=20`;
     const res = await fetch(url, { cache: "no-store" });
     const data = await res.json();
+function safeNumber(v){if(v===null||v===undefined||v==="")return null;const n=Number(v);return Number.isFinite(n)?n:null;}
+function setText(id, value, unit, digits){const el=document.getElementById(id);if(value===null){el.textContent='--';}else if(unit){el.textContent=`${value.toFixed(digits)} ${unit}`;}else{el.textContent=`${value.toFixed(digits)}`;}}
+function setGasStatus(id, gas){const el=document.getElementById(id);if(gas===null){el.textContent='等待資料';el.className='status warn';}else if(gas>=GAS_WARN){el.textContent='🚨 瓦斯超標';el.className='status danger';}else{el.textContent='安全範圍';el.className='status safe';}}
 
     const feeds = Array.isArray(data.feeds) ? data.feeds : [];
     if (!feeds.length) return;
@@ -494,6 +494,8 @@ async function sendFan(baseCmd) {
   } else {
     alert("已送出 IR 命令：" + cmd);
   }
+window.handleLogin = handleLogin;
+
 function handleRegister(){
   const user=document.getElementById('registerUsername').value.trim();
   const pass=document.getElementById('registerPassword').value;
@@ -508,6 +510,7 @@ function handleRegister(){
   document.getElementById('registerUsername').value = '';
   document.getElementById('registerPassword').value = '';
 }
+window.handleRegister = handleRegister;
 
 getSensors();
 getRelayState();
