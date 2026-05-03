@@ -140,6 +140,7 @@
     button{padding:10px 14px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-weight:bold;cursor:pointer}
     .err{min-height:20px;font-size:14px}.row{display:flex;gap:8px;flex-wrap:wrap}
     #app{display:none}
+    .hidden{display:none !important}
     @media(max-width:900px){.grid{grid-template-columns:1fr}.sensor{grid-template-columns:1fr}}
   </style>
 </head>
@@ -397,8 +398,12 @@ setInterval(getRelayState, 5000);
   function saveAccount(a){try{localStorage.setItem(ACCOUNT_KEY,JSON.stringify(a));}catch(e){}}
   var sensorTimer=null, relayTimer=null;
   function unlockApp(){
-    document.getElementById('loginScreen').style.display='none';
-    document.getElementById('app').style.display='block';
+    var loginEl=document.getElementById('loginScreen');
+    var appEl=document.getElementById('app');
+    loginEl.classList.add('hidden');
+    appEl.classList.remove('hidden');
+    loginEl.style.display='none';
+    appEl.style.display='block';
     getSensors();getRelayState();
     if(sensorTimer) clearInterval(sensorTimer);
     if(relayTimer) clearInterval(relayTimer);
@@ -406,13 +411,18 @@ setInterval(getRelayState, 5000);
     relayTimer=setInterval(getRelayState,5000);
   }
   function logoutApp(){
+    var loginEl=document.getElementById('loginScreen');
+    var appEl=document.getElementById('app');
     if(sensorTimer) clearInterval(sensorTimer);
     if(relayTimer) clearInterval(relayTimer);
     sensorTimer=null; relayTimer=null;
-    document.getElementById('app').style.display='none';
-    document.getElementById('loginScreen').style.display='flex';
+    appEl.classList.add('hidden');
+    loginEl.classList.remove('hidden');
+    appEl.style.display='none';
+    loginEl.style.display='flex';
     document.getElementById('loginPassword').value='';
     document.getElementById('loginError').textContent='';
+    window.scrollTo({top:0, behavior:'auto'});
   }
 
   document.getElementById('loginBtn').addEventListener('click', function(){
