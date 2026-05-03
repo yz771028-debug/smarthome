@@ -603,6 +603,98 @@ setInterval(getRelayState, 5000);
   window.getSensors = getSensors;
   window.getRelayState = getRelayState;
 })();
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+
+  const ACCOUNT_KEY = 'smarthome_account';
+  const DEFAULT_ACCOUNT = {
+    username: 'admin',
+    password: '123456'
+  };
+
+  const loginBtn = document.getElementById('loginBtn');
+  const registerBtn = document.getElementById('registerBtn');
+  const logoutBtn = document.getElementById('logoutBtn');
+
+  function getAccount() {
+    const raw = localStorage.getItem(ACCOUNT_KEY);
+    if (!raw) return DEFAULT_ACCOUNT;
+
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return DEFAULT_ACCOUNT;
+    }
+  }
+
+  function saveAccount(username, password) {
+    localStorage.setItem(ACCOUNT_KEY, JSON.stringify({
+      username,
+      password
+    }));
+  }
+
+  function unlockApp() {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+
+    if (typeof getSensors === 'function') getSensors();
+    if (typeof getRelayState === 'function') getRelayState();
+  }
+
+  loginBtn.addEventListener('click', () => {
+    const user = document.getElementById('loginUsername').value.trim();
+    const pass = document.getElementById('loginPassword').value;
+    const msg = document.getElementById('loginMsg');
+
+    msg.style.color = '#fb7185';
+    msg.textContent = '';
+
+    const account = getAccount();
+
+    if (user === account.username && pass === account.password) {
+      unlockApp();
+    } else {
+      msg.textContent = '帳號或密碼錯誤';
+    }
+  });
+
+  registerBtn.addEventListener('click', () => {
+    const user = document.getElementById('registerUsername').value.trim();
+    const pass = document.getElementById('registerPassword').value;
+    const msg = document.getElementById('registerMsg');
+
+    msg.style.color = '#fb7185';
+    msg.textContent = '';
+
+    if (user.length < 3) {
+      msg.textContent = '帳號至少需要 3 個字元';
+      return;
+    }
+
+    if (pass.length < 6) {
+      msg.textContent = '密碼至少需要 6 個字元';
+      return;
+    }
+
+    saveAccount(user, pass);
+
+    msg.style.color = '#2dd4bf';
+    msg.textContent = '註冊成功，請登入';
+
+    document.getElementById('registerUsername').value = '';
+    document.getElementById('registerPassword').value = '';
+  });
+
+  if (logoutBtn) {
+    logoutBtn.addEventListener('click', () => {
+      document.getElementById('app').style.display = 'none';
+      document.getElementById('loginScreen').style.display = 'flex';
+      document.getElementById('loginPassword').value = '';
+    });
+  }
+
+});
 </script>
 
 </body>
