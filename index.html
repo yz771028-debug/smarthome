@@ -167,52 +167,75 @@ input{width:100%;padding:10px;border-radius:8px;border:1px solid var(--line);bac
   </div>
 </div>
 
-<div class="wrap">
-  <h1>智慧居家控制系統</h1>
-  <div class="subtitle">溫溼度、瓦斯監測、Relay 風扇 A、紅外線風扇 B、蜂鳴器警報</div>
-
-  <div id="alertBanner" class="alert-banner">🚨 瓦斯濃度超過 350，系統已進入警報狀態</div>
-
 <div id="app" class="wrap">
-  <div class="card"><div class="row" style="justify-content:space-between"><h1 style="margin:0">雙房間智慧居家控制系統</h1><button id="logoutBtn" type="button">登出</button></div></div>
-  <div id="alertBanner" class="card danger" style="display:none">🚨 瓦斯濃度超過 350</div>
+  <div class="card">
+    <div class="row" style="justify-content:space-between;align-items:center">
+      <h1 style="margin:0">雙房間智慧居家控制系統</h1>
+      <button id="logoutBtn" type="button">登出</button>
+    </div>
+    <div class="subtitle">溫溼度、瓦斯監測、Relay 風扇 A、紅外線風扇 B、蜂鳴器警報</div>
+  </div>
+
+  <div id="alertBanner" class="card danger" style="display:none">
+    🚨 瓦斯濃度超過 350，系統已進入警報狀態
+  </div>
+
   <div class="grid">
 
     <div class="card">
-      <div class="title">即時感測器數據</div>
-      <div class="sensor-grid">
-        <div class="sensor-box">
-          <div class="sensor-name">溫度</div>
-          <div id="temp" class="sensor-value">--</div>
-          <div id="tempStatus" class="status"></div>
+      <h3>房間 1 感測器</h3>
+      <div class="sensor">
+        <div class="box">
+          <div>溫度</div>
+          <div id="r1temp" class="v">--</div>
         </div>
 
-        <div class="sensor-box">
-          <div class="sensor-name">濕度</div>
-          <div id="humi" class="sensor-value">--</div>
-          <div class="status safe">正常監測中</div>
+        <div class="box">
+          <div>濕度</div>
+          <div id="r1humi" class="v">--</div>
         </div>
 
-        <div class="sensor-box">
-          <div class="sensor-name">瓦斯</div>
-          <div id="gas" class="sensor-value">--</div>
-          <div id="gasStatus" class="status"></div>
+        <div class="box">
+          <div>瓦斯</div>
+          <div id="r1gas" class="v">--</div>
+          <div id="r1gasStatus"></div>
         </div>
       </div>
     </div>
 
     <div class="card">
-      <div class="title">Relay 風扇 A 控制</div>
-      <div id="relayState" class="relay-state">讀取中...</div>
-      <div class="control-row">
+      <h3>房間 2 感測器</h3>
+      <div class="sensor">
+        <div class="box">
+          <div>溫度</div>
+          <div id="r2temp" class="v">--</div>
+        </div>
+
+        <div class="box">
+          <div>濕度</div>
+          <div id="r2humi" class="v">--</div>
+        </div>
+
+        <div class="box">
+          <div>瓦斯</div>
+          <div id="r2gas" class="v">--</div>
+          <div id="r2gasStatus"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>Relay 風扇 A 控制</h3>
+      <div id="relayState" class="v">讀取中...</div>
+      <div class="row">
         <button onclick="setRelay(1)">開啟</button>
         <button onclick="setRelay(0)">關閉</button>
       </div>
     </div>
 
     <div class="card">
-      <div class="title">紅外線風扇 B 控制</div>
-      <div class="control-row">
+      <h3>紅外線風扇 B 控制</h3>
+      <div class="row">
         <button onclick="sendFan(1)">開</button>
         <button onclick="sendFan(2)">關</button>
         <button onclick="sendFan(3)">風量+</button>
@@ -221,21 +244,13 @@ input{width:100%;padding:10px;border-radius:8px;border:1px solid var(--line);bac
       </div>
     </div>
 
-    <div class="card">
-      <div class="title">最近 20 筆感測圖表</div>
-      <div class="chart-box">
-        <canvas id="chart" height="110"></canvas>
-      </div>
+    <div class="card" style="grid-column:1 / -1">
+      <h3>最近 20 筆瓦斯趨勢</h3>
+      <canvas id="chart" height="110"></canvas>
     </div>
 
-    <div class="card"><h3>房間 1</h3><div class="sensor"><div class="box"><div>溫度</div><div id="r1temp" class="v">--</div></div><div class="box"><div>濕度</div><div id="r1humi" class="v">--</div></div><div class="box"><div>瓦斯</div><div id="r1gas" class="v">--</div><div id="r1gasStatus"></div></div></div></div>
-    <div class="card"><h3>房間 2</h3><div class="sensor"><div class="box"><div>溫度</div><div id="r2temp" class="v">--</div></div><div class="box"><div>濕度</div><div id="r2humi" class="v">--</div></div><div class="box"><div>瓦斯</div><div id="r2gas" class="v">--</div><div id="r2gasStatus"></div></div></div></div>
   </div>
-  <div class="card"><h3>Relay 風扇 A</h3><div id="relayState" class="v">讀取中...</div><div class="row"><button onclick="setRelay(1)">開啟</button><button onclick="setRelay(0)">關閉</button></div></div>
-  <div class="card"><h3>紅外線風扇 B</h3><div class="row"><button onclick="sendFan(1)">開</button><button onclick="sendFan(2)">關</button><button onclick="sendFan(3)">風量+</button><button onclick="sendFan(4)">風量-</button><button onclick="sendFan(5)">擺頭</button></div></div>
-  <div class="card"><h3>最近 20 筆瓦斯趨勢</h3><canvas id="chart" height="110"></canvas></div>
 </div>
-
 <script>
 const SENSOR_CHANNEL = 3271973;
 const RELAY_CHANNEL = 3277178;
