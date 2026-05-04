@@ -20,15 +20,32 @@ body{
   padding:24px;
 }
 
-h1{
-  margin-bottom:8px;
-}
-
 .status{
   padding:12px 16px;
   border-radius:12px;
   background:#1e293b;
   margin-bottom:18px;
+}
+
+.alert{
+  display:none;
+  background:#7f1d1d;
+  color:#fecaca;
+  padding:14px;
+  border-radius:14px;
+  margin-bottom:16px;
+  font-weight:bold;
+  animation: blink 1s infinite;
+}
+
+.show{
+  display:block;
+}
+
+@keyframes blink{
+  0%{opacity:1}
+  50%{opacity:.45}
+  100%{opacity:1}
 }
 
 .grid{
@@ -53,10 +70,11 @@ h1{
 .value{
   font-size:34px;
   font-weight:bold;
-  margin:8px 0;
+  margin:8px 0 16px;
 }
 
 button{
+  position:relative;
   padding:12px 18px;
   margin:6px;
   border:0;
@@ -66,32 +84,54 @@ button{
   cursor:pointer;
   background:#2563eb;
   color:white;
+  transition:.15s;
 }
 
-button.red{
-  background:#dc2626;
+button:hover{
+  transform:translateY(-2px);
+  filter:brightness(1.1);
 }
 
-button.green{
-  background:#16a34a;
+button:active{
+  transform:scale(.95);
 }
 
-button.orange{
-  background:#ea580c;
+button.loading{
+  opacity:.6;
+  pointer-events:none;
 }
 
-.alert{
-  display:none;
-  background:#7f1d1d;
-  color:#fecaca;
-  padding:14px;
+button.loading::after{
+  content:"";
+  width:14px;
+  height:14px;
+  border:2px solid white;
+  border-top-color:transparent;
+  border-radius:50%;
+  position:absolute;
+  right:8px;
+  top:50%;
+  margin-top:-7px;
+  animation:spin .7s linear infinite;
+}
+
+@keyframes spin{
+  to{transform:rotate(360deg)}
+}
+
+.green{background:#16a34a}
+.red{background:#dc2626}
+.orange{background:#ea580c}
+
+.log{
+  margin-top:16px;
+  background:#020617;
   border-radius:14px;
-  margin-bottom:16px;
-  font-weight:bold;
-}
-
-.show{
-  display:block;
+  padding:12px;
+  height:120px;
+  overflow:auto;
+  font-size:14px;
+  color:#cbd5e1;
 }
 </style>
 </head>
@@ -100,9 +140,9 @@ button.orange{
 <div class="wrap">
 
 <h1>MQTT 智慧居家控制系統</h1>
-<div id="mqttStatus" class="status">MQTT：連線中...</div>
 
-<div id="gasAlert" class="alert">🚨 瓦斯濃度超標，系統已啟動警報</div>
+<div id="mqttStatus" class="status">MQTT：連線中...</div>
+<div id="gasAlert" class="alert">🚨 瓦斯濃度超標，系統已啟動警報並發送 LINE 通知</div>
 
 <div class="grid">
 
@@ -130,33 +170,37 @@ button.orange{
     <div class="title">Relay 風扇</div>
     <div>狀態</div>
     <div id="relayState" class="value">--</div>
-    <button class="green" onclick="relayOn()">開啟</button>
-    <button class="red" onclick="relayOff()">關閉</button>
+    <button class="green" onclick="relayOn(this)">開啟</button>
+    <button class="red" onclick="relayOff(this)">關閉</button>
   </div>
 
   <div class="card">
     <div class="title">紅外線風扇</div>
-    <button class="green" onclick="irCmd('OPEN')">開</button>
-    <button class="red" onclick="irCmd('CLOSE')">關</button>
-    <button onclick="irCmd('UP')">風量+</button>
-    <button onclick="irCmd('DOWN')">風量-</button>
-    <button class="orange" onclick="irCmd('SWING')">擺頭</button>
+    <button class="green" onclick="irCmd('OPEN', this)">開</button>
+    <button class="red" onclick="irCmd('CLOSE', this)">關</button>
+    <button onclick="irCmd('UP', this)">風量+</button>
+    <button onclick="irCmd('DOWN', this)">風量-</button>
+    <button class="orange" onclick="irCmd('SWING', this)">擺頭</button>
   </div>
 
 </div>
+
+<div class="log" id="log"></div>
+
 </div>
 
 <script>
 const GAS_LIMIT = 1000;
 
-// WebSocket MQTT
-const broker = "wss://broker.hivemq.com:8884/mqtt";
+// ESP 也要使用 test.mosquitto.org
+const broker = "wss://test.mosquitto.org:8081/mqtt";
 
-const clientId = "web_smart_home_" + Math.floor(Math.random() * 100000);
+const clientId = "web_smart_home_" + Math.floor(Math.random() * 1000000);
+
 const client = mqtt.connect(broker, {
-  clientId: clientId,
+  clientId,
   clean: true,
-  connectTimeout: 5000,
+  connectTimeout: 8000,
   reconnectPeriod: 3000
 });
 
@@ -168,23 +212,36 @@ const topics = [
   "smarthome/room2/humi",
   "smarthome/room2/gas",
   "smarthome/relay/state",
+  "smarthome/alarm/gas",
   "smarthome/status"
 ];
 
 let gas1 = 0;
 let gas2 = 0;
 
+function log(msg){
+  const el = document.getElementById("log");
+  const time = new Date().toLocaleTimeString();
+  el.innerHTML = `[${time}] ${msg}<br>` + el.innerHTML;
+}
+
 client.on("connect", () => {
   document.getElementById("mqttStatus").textContent = "MQTT：已連線";
-  topics.forEach(t => client.subscribe(t));
+  document.getElementById("mqttStatus").style.background = "#064e3b";
+
+  topics.forEach(t => client.subscribe(t, {qos:1}));
+  log("MQTT 已連線");
 });
 
 client.on("reconnect", () => {
   document.getElementById("mqttStatus").textContent = "MQTT：重新連線中...";
+  document.getElementById("mqttStatus").style.background = "#78350f";
 });
 
-client.on("error", () => {
+client.on("error", err => {
   document.getElementById("mqttStatus").textContent = "MQTT：連線錯誤";
+  document.getElementById("mqttStatus").style.background = "#7f1d1d";
+  log("MQTT 錯誤");
 });
 
 client.on("message", (topic, message) => {
@@ -213,13 +270,19 @@ client.on("message", (topic, message) => {
   else if (topic === "smarthome/relay/state") {
     document.getElementById("relayState").textContent = msg === "1" ? "ON" : "OFF";
   }
+  else if (topic === "smarthome/alarm/gas") {
+    const alarm = msg === "1";
+    document.getElementById("gasAlert").classList.toggle("show", alarm);
+  }
+  else if (topic === "smarthome/status") {
+    log("ESP 狀態：" + msg);
+  }
 
-  updateAlert();
+  updateGasAlert();
 });
 
-function updateAlert(){
+function updateGasAlert(){
   const alertBox = document.getElementById("gasAlert");
-
   if (gas1 >= GAS_LIMIT || gas2 >= GAS_LIMIT) {
     alertBox.classList.add("show");
   } else {
@@ -227,16 +290,39 @@ function updateAlert(){
   }
 }
 
-function relayOn(){
-  client.publish("smarthome/relay/cmd", "ON");
+function buttonLoading(btn){
+  if (!btn) return;
+  btn.classList.add("loading");
+  setTimeout(() => btn.classList.remove("loading"), 900);
 }
 
-function relayOff(){
-  client.publish("smarthome/relay/cmd", "OFF");
+function publish(topic, msg, btn){
+  if (!client.connected) {
+    alert("MQTT 尚未連線");
+    return;
+  }
+
+  buttonLoading(btn);
+
+  client.publish(topic, msg, {qos:1, retain:false}, err => {
+    if (err) {
+      log("送出失敗：" + topic + " " + msg);
+    } else {
+      log("送出：" + topic + " → " + msg);
+    }
+  });
 }
 
-function irCmd(cmd){
-  client.publish("smarthome/ir/cmd", cmd);
+function relayOn(btn){
+  publish("smarthome/relay/cmd", "ON", btn);
+}
+
+function relayOff(btn){
+  publish("smarthome/relay/cmd", "OFF", btn);
+}
+
+function irCmd(cmd, btn){
+  publish("smarthome/ir/cmd", cmd, btn);
 }
 </script>
 
