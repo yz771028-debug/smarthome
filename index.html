@@ -532,7 +532,25 @@ document.addEventListener("DOMContentLoaded", () => {
     document.getElementById("registerCode")
       .value = "";
   });
+// ===== 登出 =====
+logoutBtn.addEventListener("click",()=>{
 
+  // 隱藏控制畫面
+  document.getElementById("app")
+    .style.display = "none";
+
+  // 顯示登入畫面
+  document.getElementById("loginScreen")
+    .style.display = "flex";
+
+  // 清空登入欄位
+  document.getElementById("loginPassword")
+    .value = "";
+
+  document.getElementById("loginMsg")
+    .textContent = "";
+});
+  
 });
 
 // ===== MQTT =====
