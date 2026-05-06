@@ -156,12 +156,112 @@ button.loading::after{
   color:#94a3b8;
   font-size:14px;
 }
+
+#app{
+  display:none;
+}
+
+#loginScreen{
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:linear-gradient(135deg,#020617,#0f172a,#1e293b);
+  z-index:9999;
+}
+
+.login-card{
+  width:min(420px,92vw);
+  background:#1e293b;
+  border:1px solid #334155;
+  border-radius:22px;
+  padding:24px;
+  box-shadow:0 20px 60px rgba(0,0,0,.45);
+}
+
+.login-card h2{
+  text-align:center;
+  margin:0 0 8px;
+}
+
+.login-subtitle{
+  text-align:center;
+  color:#cbd5e1;
+  font-size:14px;
+  margin-bottom:18px;
+}
+
+.login-card label{
+  display:block;
+  margin:10px 0 6px;
+  color:#cbd5e1;
+}
+
+.login-card input{
+  width:100%;
+  padding:12px;
+  border-radius:12px;
+  border:1px solid #334155;
+  background:#020617;
+  color:white;
+  margin-bottom:10px;
+}
+
+.login-card button{
+  width:100%;
+  margin:8px 0;
+}
+
+.divider{
+  height:1px;
+  background:#334155;
+  margin:18px 0;
+}
+
+.msg{
+  min-height:22px;
+  text-align:center;
+  font-size:14px;
+}
 </style>
 </head>
 
 <body>
 
-<div class="wrap">
+<div id="loginScreen">
+  <div class="login-card">
+    <h2>智慧居家系統登入</h2>
+    <div class="login-subtitle">請先登入後進入 MQTT 控制介面</div>
+
+    <label>帳號</label>
+    <input id="loginUsername" type="text" placeholder="請輸入帳號">
+
+    <label>密碼</label>
+    <input id="loginPassword" type="password" placeholder="請輸入密碼">
+
+    <button id="loginBtn" type="button">登入</button>
+    <div id="loginMsg" class="msg"></div>
+
+    <div class="divider"></div>
+
+    <h3>註冊帳號</h3>
+
+    <label>新帳號</label>
+    <input id="registerUsername" type="text" placeholder="至少 3 個字元">
+
+    <label>新密碼</label>
+    <input id="registerPassword" type="password" placeholder="至少 6 個字元">
+
+    <label>邀請碼</label>
+    <input id="registerCode" type="password" placeholder="請輸入邀請碼">
+
+    <button id="registerBtn" type="button">建立帳號</button>
+    <div id="registerMsg" class="msg"></div>
+  </div>
+</div>
+  
+<div id="app" class="wrap">
 
 <h1>MQTT 智慧居家控制系統</h1>
 
@@ -259,6 +359,22 @@ MQTT Broker：broker.emqx.io
 </div>
 
 <script>
+
+// ===== 登入 / 註冊 =====
+document.addEventListener("DOMContentLoaded", () => {
+  const ACCOUNT_KEY = "smarthome_account";
+  const INVITE_CODE = "smart2026";
+
+  const DEFAULT_ACCOUNT = {
+    username: "admin",
+    password: "123456"
+  };
+
+  // 你貼的整段放這裡
+});
+
+// ===== MQTT =====
+const broker = "wss://broker.emqx.io:8084/mqtt";
 
 // ===== MQTT =====
 const broker = "wss://broker.emqx.io:8084/mqtt";
