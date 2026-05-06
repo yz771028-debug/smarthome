@@ -362,6 +362,7 @@ MQTT Broker：broker.emqx.io
 
 // ===== 登入 / 註冊 =====
 document.addEventListener("DOMContentLoaded", () => {
+
   const ACCOUNT_KEY = "smarthome_account";
   const INVITE_CODE = "123456";
 
@@ -370,11 +371,152 @@ document.addEventListener("DOMContentLoaded", () => {
     password: "123456"
   };
 
-  // 你貼的整段放這裡
-});
+  const loginBtn =
+    document.getElementById("loginBtn");
 
-// ===== MQTT =====
-const broker = "wss://broker.emqx.io:8084/mqtt";
+  const registerBtn =
+    document.getElementById("registerBtn");
+
+  function getAccount(){
+
+    const raw =
+      localStorage.getItem(ACCOUNT_KEY);
+
+    if(!raw){
+      return DEFAULT_ACCOUNT;
+    }
+
+    try{
+      return JSON.parse(raw);
+
+    }catch{
+
+      return DEFAULT_ACCOUNT;
+    }
+  }
+
+  function saveAccount(username,password){
+
+    localStorage.setItem(
+      ACCOUNT_KEY,
+
+      JSON.stringify({
+        username,
+        password
+      })
+    );
+  }
+
+  function unlockApp(){
+
+    document.getElementById("loginScreen")
+      .style.display = "none";
+
+    document.getElementById("app")
+      .style.display = "block";
+  }
+
+  // ===== 登入 =====
+  loginBtn.addEventListener("click",()=>{
+
+    const user =
+      document.getElementById("loginUsername")
+      .value.trim();
+
+    const pass =
+      document.getElementById("loginPassword")
+      .value;
+
+    const msg =
+      document.getElementById("loginMsg");
+
+    msg.style.color = "#fca5a5";
+    msg.textContent = "";
+
+    const account = getAccount();
+
+    if(
+      user === account.username &&
+      pass === account.password
+    ){
+
+      unlockApp();
+
+    }else{
+
+      msg.textContent =
+        "帳號或密碼錯誤";
+    }
+  });
+
+  // ===== 註冊 =====
+  registerBtn.addEventListener("click",()=>{
+
+    const user =
+      document.getElementById("registerUsername")
+      .value.trim();
+
+    const pass =
+      document.getElementById("registerPassword")
+      .value;
+
+    const code =
+      document.getElementById("registerCode")
+      .value.trim();
+
+    const msg =
+      document.getElementById("registerMsg");
+
+    msg.style.color = "#fca5a5";
+    msg.textContent = "";
+
+    // 邀請碼
+    if(code !== INVITE_CODE){
+
+      msg.textContent =
+        "邀請碼錯誤";
+
+      return;
+    }
+
+    // 帳號長度
+    if(user.length < 3){
+
+      msg.textContent =
+        "帳號至少需要 3 個字元";
+
+      return;
+    }
+
+    // 密碼長度
+    if(pass.length < 6){
+
+      msg.textContent =
+        "密碼至少需要 6 個字元";
+
+      return;
+    }
+
+    // 儲存帳號
+    saveAccount(user,pass);
+
+    msg.style.color = "#86efac";
+
+    msg.textContent =
+      "註冊成功 ✔";
+
+    // 清空
+    document.getElementById("registerUsername")
+      .value = "";
+
+    document.getElementById("registerPassword")
+      .value = "";
+
+    document.getElementById("registerCode")
+      .value = "";
+  });
+
+});
 
 // ===== MQTT =====
 const broker = "wss://broker.emqx.io:8084/mqtt";
