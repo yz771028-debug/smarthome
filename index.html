@@ -381,7 +381,24 @@ MQTT Broker：broker.emqx.io
 </div>
 
 <script>
+// ===== Firebase =====
+const firebaseConfig = {
+  apiKey: "AIzaSyBWAR545ZiCCAL49PqhbeYVl5eZ9iXnBr8",
+  authDomain: "smart-home-security-b06fe.firebaseapp.com",
+  databaseURL: "https://smart-home-security-b06fe-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "smart-home-security-b06fe",
+  storageBucket: "smart-home-security-b06fe.firebasestorage.app",
+  messagingSenderId: "592787545772",
+  appId: "1:592787545772:web:3c29eb9f326e919b04c909",
+  measurementId: "G-M29H6DB7YD"
+};
 
+firebase.initializeApp(firebaseConfig);
+
+const db =
+  firebase.database();
+
+  
 // ===== 登入 / 註冊 =====
 document.addEventListener("DOMContentLoaded", () => {
 
