@@ -420,35 +420,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const logoutBtn =
   document.getElementById("logoutBtn");
 
-  function getAccount(){
+  
 
-    const raw =
-      localStorage.getItem(ACCOUNT_KEY);
 
-    if(!raw){
-      return DEFAULT_ACCOUNT;
-    }
-
-    try{
-      return JSON.parse(raw);
-
-    }catch{
-
-      return DEFAULT_ACCOUNT;
-    }
-  }
-
-  function saveAccount(username,password){
-
-    localStorage.setItem(
-      ACCOUNT_KEY,
-
-      JSON.stringify({
-        username,
-        password
-      })
-    );
-  }
 
   function unlockApp(){
 
@@ -460,104 +434,126 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // ===== 登入 =====
-  loginBtn.addEventListener("click",()=>{
+  // ===== 登入：Firebase 雲端登入 =====
+loginBtn.addEventListener("click", async ()=>{
 
-    const user =
-      document.getElementById("loginUsername")
-      .value.trim();
+  const user =
+    document.getElementById("loginUsername")
+    .value.trim();
 
-    const pass =
-      document.getElementById("loginPassword")
-      .value;
+  const pass =
+    document.getElementById("loginPassword")
+    .value;
 
-    const msg =
-      document.getElementById("loginMsg");
+  const msg =
+    document.getElementById("loginMsg");
 
-    msg.style.color = "#fca5a5";
-    msg.textContent = "";
+  msg.style.color = "#fca5a5";
+  msg.textContent = "";
 
-    const account = getAccount();
+  if(user === "" || pass === ""){
+    msg.textContent = "請輸入帳號與密碼";
+    return;
+  }
 
-    if(
-      user === account.username &&
-      pass === account.password
-    ){
+  try{
+
+    const snapshot =
+      await db.ref("users/" + user).once("value");
+
+    if(!snapshot.exists()){
+      msg.textContent = "帳號不存在";
+      return;
+    }
+
+    const data =
+      snapshot.val();
+
+    if(data.password === pass){
 
       unlockApp();
 
     }else{
 
-      msg.textContent =
-        "帳號或密碼錯誤";
+      msg.textContent = "密碼錯誤";
     }
-  });
+
+  }catch(error){
+
+    console.log(error);
+    msg.textContent = "雲端登入失敗";
+  }
+
+});
 
   // ===== 註冊 =====
-  registerBtn.addEventListener("click",()=>{
+  // ===== 註冊：Firebase 雲端註冊 =====
+registerBtn.addEventListener("click", async ()=>{
 
-    const user =
-      document.getElementById("registerUsername")
-      .value.trim();
+  const user =
+    document.getElementById("registerUsername")
+    .value.trim();
 
-    const pass =
-      document.getElementById("registerPassword")
-      .value;
+  const pass =
+    document.getElementById("registerPassword")
+    .value;
 
-    const code =
-      document.getElementById("registerCode")
-      .value.trim();
+  const code =
+    document.getElementById("registerCode")
+    .value.trim();
 
-    const msg =
-      document.getElementById("registerMsg");
+  const msg =
+    document.getElementById("registerMsg");
 
-    msg.style.color = "#fca5a5";
-    msg.textContent = "";
+  msg.style.color = "#fca5a5";
+  msg.textContent = "";
 
-    // 邀請碼
-    if(code !== INVITE_CODE){
+  if(code !== INVITE_CODE){
+    msg.textContent = "金鑰錯誤";
+    return;
+  }
 
-      msg.textContent =
-        "邀請碼錯誤";
+  if(user.length < 3){
+    msg.textContent = "帳號至少需要 3 個字元";
+    return;
+  }
 
+  if(pass.length < 6){
+    msg.textContent = "密碼至少需要 6 個字元";
+    return;
+  }
+
+  try{
+
+    const snapshot =
+      await db.ref("users/" + user).once("value");
+
+    if(snapshot.exists()){
+      msg.textContent = "帳號已存在";
       return;
     }
 
-    // 帳號長度
-    if(user.length < 3){
-
-      msg.textContent =
-        "帳號至少需要 3 個字元";
-
-      return;
-    }
-
-    // 密碼長度
-    if(pass.length < 6){
-
-      msg.textContent =
-        "密碼至少需要 6 個字元";
-
-      return;
-    }
-
-    // 儲存帳號
-    saveAccount(user,pass);
+    await db.ref("users/" + user).set({
+      username:user,
+      password:pass,
+      createdAt:Date.now()
+    });
 
     msg.style.color = "#86efac";
+    msg.textContent = "註冊成功 ✔ 請登入";
 
-    msg.textContent =
-      "註冊成功 ✔";
+    document.getElementById("registerUsername").value = "";
+    document.getElementById("registerPassword").value = "";
+    document.getElementById("registerCode").value = "";
 
-    // 清空
-    document.getElementById("registerUsername")
-      .value = "";
+  }catch(error){
 
-    document.getElementById("registerPassword")
-      .value = "";
+    console.log(error);
+    msg.textContent = "雲端註冊失敗";
+  }
 
-    document.getElementById("registerCode")
-      .value = "";
-  });
+});
+  
 // ===== 登出 =====
 logoutBtn.addEventListener("click",()=>{
 
