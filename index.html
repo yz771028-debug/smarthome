@@ -13,6 +13,12 @@ body{margin:0;font-family:Arial,"Microsoft JhengHei",sans-serif;background:#0f17
 .wrap{max-width:1200px;margin:auto;padding:24px;}
 h1{margin-bottom:10px;}
 .status{padding:12px 16px;border-radius:12px;background:#1e293b;margin-bottom:12px;font-weight:bold;}
+
+/* ===== 新增：人臉識別視覺狀態面板樣式 ===== */
+.face-status {padding:12px 16px;border-radius:12px;margin-bottom:12px;font-weight:bold;transition:all 0.4s ease;}
+.face-locked {background:#7f1d1d; color:#fecaca; border:1px solid #b91c1c;}
+.face-unlocked {background:#064e3b; color:#a7f3d0; border:1px solid #059669;}
+
 .update{margin-bottom:20px;color:#cbd5e1;}
 .alert{display:none;background:#7f1d1d;color:#fecaca;padding:14px;border-radius:14px;margin-bottom:18px;font-weight:bold;animation:blink 1s infinite;}
 .show{display:block;}
@@ -72,8 +78,11 @@ button.loading::after{content:"";width:14px;height:14px;border:2px solid white;b
 
 <h1>MQTT 智慧居家控制系統</h1>
 <div id="mqttStatus" class="status">MQTT：連線中...</div>
+
+<div id="faceLockStatus" class="face-status face-locked">人臉鎖安全認證：系統鎖定中 🔒 (請在室內機前進行刷臉辨識)</div>
+
 <div id="lastUpdate" class="update">最後更新：--</div>
-<div id="gasAlert" class="alert">🚨 瓦斯濃度超標，系統已啟動警報</div>
+<div id="gasAlert" class="alert">⚠️ 瓦斯濃度超標，系統已啟動警報</div>
 
 <div class="grid">
   <div class="card">
@@ -199,7 +208,7 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       await db.ref("users/" + user).set({username:user,password:pass,createdAt:Date.now()});
       msg.style.color = "#86efac";
-      msg.textContent = "註冊成功 ✔ 請登入";
+      msg.textContent = "註冊成功 🌟 請登入";
       document.getElementById("registerUsername").value = "";
       document.getElementById("registerPassword").value = "";
       document.getElementById("registerCode").value = "";
@@ -222,6 +231,7 @@ const broker = "wss://broker.emqx.io:8084/mqtt";
 const clientId = "web_smart_home_" + Math.floor(Math.random() * 1000000);
 const client = mqtt.connect(broker, {clientId:clientId, clean:true, connectTimeout:8000, reconnectPeriod:5000});
 
+// === 新增：於偵聽主題清單陣列中加入人臉狀態監測主題 ===
 const topics = [
   "smarthome/room1/temp",
   "smarthome/room1/humi",
@@ -234,9 +244,9 @@ const topics = [
   "smarthome/status",
   "smarthome/stepper/state",
   "smarthome/husky/targetX",
-  "smarthome/husky/source"
+  "smarthome/husky/source",
+  "smarthome/face/lock" 
 ];
-
 const GAS_LIMIT = 1000;
 let gas1 = 0;
 let gas2 = 0;
@@ -288,6 +298,18 @@ client.on("message", (topic, message) => {
   else if (topic === "smarthome/stepper/state") document.getElementById("stepperState").textContent = msg;
   else if (topic === "smarthome/husky/targetX") document.getElementById("huskyX").textContent = msg;
   else if (topic === "smarthome/husky/source") document.getElementById("huskySource").textContent = msg;
+  
+  // === 新增：監聽並即時轉換人臉安全鎖的網頁端狀態 ===
+  else if (topic === "smarthome/face/lock") {
+    const faceElement = document.getElementById("faceLockStatus");
+    if(msg === "1") {
+      faceElement.textContent = "人臉鎖安全認證：主辦人已登入成功 🔓";
+      faceElement.className = "face-status face-unlocked";
+    } else {
+      faceElement.textContent = "人臉鎖安全認證：系統鎖定中 🔒 (請在室內機前進行刷臉辨識)";
+      faceElement.className = "face-status face-locked";
+    }
+  }
 
   updateGasAlert();
   updateTime();
