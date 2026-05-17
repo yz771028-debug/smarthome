@@ -10,10 +10,13 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 
 <style>
+/* 修正全域盒模型，避免 padding 撐開寬度導致對齊出錯 */
+*{box-sizing: border-box;}
+
 body{margin:0;font-family:Arial,"Microsoft JhengHei",sans-serif;background:#0f172a;color:white;}
 .wrap{max-width:1200px;margin:auto;padding:24px;}
 h1{margin-bottom:10px;}
-.status{padding:12px 16px;border-radius:12px;background:#1e293b;margin-bottom:12px;font-weight:bold;display:flex;justify-content:between;align-items:center;}
+.status{padding:12px 16px;border-radius:12px;background:#1e293b;margin-bottom:12px;font-weight:bold;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;}
 .status-tag{padding:4px 8px;border-radius:6px;font-size:14px;margin-left:10px;}
 .online{background:#16a34a;}
 .offline{background:#dc2626;}
@@ -22,15 +25,13 @@ h1{margin-bottom:10px;}
 .show{display:block;}
 @keyframes blink{0%{opacity:1}50%{opacity:.45}100%{opacity:1}}
 
-/* 資訊看板佈局 */
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:16px;}
 .card{background:#1e293b;padding:20px;border-radius:16px;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);}
 .card h2{margin-top:0;font-size:18px;color:#38bdf8;border-bottom:1px solid #334155;padding-bottom:8px;margin-bottom:12px;}
 
-.data-row{display:flex;justify-content:between;margin:10px 0;font-size:16px;}
+.data-row{display:flex;justify-content:space-between;margin:10px 0;font-size:16px;}
 .data-val{font-weight:bold;color:#f8fafc;}
 
-/* 控制按鈕樣式 */
 .btn-group{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px;}
 .btn-group-3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px;}
 button{background:#3b82f6;color:white;border:none;padding:10px;border-radius:8px;cursor:pointer;font-weight:bold;transition:all 0.2s;}
@@ -43,23 +44,129 @@ button:active{transform:scale(0.98);}
 .btn-purple{background:#8b5cf6;}
 .btn-purple:hover{background:#7c3aed;}
 
-/* 下拉選單 */
 .select-style{width:100%;padding:10px;background:#334155;color:white;border:1px solid #475569;border-radius:8px;font-weight:bold;margin-top:8px;}
 
-/* 原本的 Loading 效果 */
 .loading{position:relative;color:transparent!important;}
 .loading::after{content:"";position:absolute;width:16px;height:16px;top:50%;left:50%;margin-top:-8px;margin-left:-8px;border:2px solid white;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+#app{display:none;}
+
+#loginScreen{
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:linear-gradient(135deg,#020617,#0f172a,#1e293b);
+  z-index:9999;
+}
+
+.login-card{
+  width:min(400px,92vw);
+  background:#1e293b;
+  border:1px solid #334155;
+  border-radius:22px;
+  padding:24px;
+  box-shadow:0 20px 60px rgba(0,0,0,.45);
+}
+
+.login-card h2{text-align:center;margin:0 0 8px;}
+.login-subtitle{text-align:center;color:#cbd5e1;font-size:14px;margin-bottom:18px;}
+.login-card label{display:block;margin:10px 0 6px;color:#cbd5e1;}
+
+/* 修正輸入框與按鈕的寬度對齊線 */
+.login-card input[type="text"], .login-card input[type="password"]{
+  width:100%;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid #334155;
+  background:#020617;
+  color:white;
+  margin-bottom:10px;
+  display:block;
+}
+
+.login-card button{
+  width:100%;
+  margin:10px 0;
+  display:block;
+}
+
+.remember-row{
+  display:flex!important;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  font-size:14px;
+  margin:10px 0!important;
+}
+
+.remember-row input{
+  width:auto!important;
+  margin:0!important;
+  display:inline-block!important;
+}
+
+.divider{height:1px;background:#334155;margin:18px 0;}
+.msg{min-height:22px;text-align:center;font-size:14px;}
 </style>
 </head>
+
 <body>
 
-<div class="wrap">
-  <h1>智慧居家控制</h1>
-  <div class="status">
-    MQTT 連線狀態：<span id="mqttStatus" class="status-tag offline">斷線中</span>
-    <span style="margin-left:20px;">系統目前模式：</span><span id="currentModeDisplay" style="color:#38bdf8; font-weight:bold;">自動模式 🤖</span>
+<div id="loginScreen">
+  <div class="login-card">
+    <h2>智慧居家安全登入</h2>
+    <div class="login-subtitle">請先登入後進入控制介面</div>
+
+    <label>帳號</label>
+    <input id="loginUsername" type="text" placeholder="請輸入帳號">
+
+    <label>密碼</label>
+    <input id="loginPassword" type="password" placeholder="請輸入密碼">
+
+    <label class="remember-row">
+      <input id="rememberLogin" type="checkbox">
+      保持登入
+    </label>
+
+    <button id="loginBtn" type="button">登入</button>
+    <div id="loginMsg" class="msg"></div>
+
+    <div class="divider"></div>
+
+    <h3>註冊帳號</h3>
+
+    <label>新帳號</label>
+    <input id="registerUsername" type="text" placeholder="至少 3 個字元">
+
+    <label>新密碼</label>
+    <input id="registerPassword" type="password" placeholder="至少 6 個字元">
+
+    <label>金鑰</label>
+    <input id="registerCode" type="password" placeholder="請輸入金鑰">
+
+    <button id="registerBtn" type="button">建立帳號</button>
+    <div id="registerMsg" class="msg"></div>
   </div>
+</div>
+
+<div id="app" class="wrap">
+
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px;">
+    <h1 style="margin:0;">智慧居家控制</h1>
+    <button id="logoutBtn" type="button" class="btn-off" style="width:auto;padding:10px 18px;">登出</button>
+  </div>
+
+  <div class="status">
+    <div>
+      MQTT 連線狀態：<span id="mqttStatus" class="status-tag offline">斷線中</span>
+      <span style="margin-left:20px;">系統目前模式：</span>
+      <span id="currentModeDisplay" style="color:#38bdf8;font-weight:bold;">自動模式 🤖</span>
+    </div>
+  </div>
+
   <div class="update">最後更新時間：<span id="timeStr">--:--:--</span></div>
 
   <div id="gasAlert" class="alert">🚨 偵測到環境瓦斯濃度超標！系統已強制啟動風扇排氣排毒！</div>
@@ -70,15 +177,17 @@ button:active{transform:scale(0.98);}
       <div class="data-row">
         <span>手自動模式切換：</span>
       </div>
+
       <select id="modeSelect" class="select-style" onchange="changeSystemMode(this.value)">
         <option value="AUTO">自動模式 (AI 追蹤擺頭+自動溫控)</option>
         <option value="MANUAL">手動模式 (遠端解鎖、手動控制)</option>
       </select>
 
-      <div class="data-row" style="margin-top: 20px;">
+      <div class="data-row" style="margin-top:20px;">
         <span>風扇繼電器狀態：</span>
         <span id="fanStateText" class="data-val">OFF</span>
       </div>
+
       <div class="btn-group">
         <button class="btn-on" onclick="publish('smarthome/relay/cmd', 'ON', this)">強制開啟</button>
         <button class="btn-off" onclick="publish('smarthome/relay/cmd', 'OFF', this)">強制關閉</button>
@@ -101,8 +210,9 @@ button:active{transform:scale(0.98);}
   </div>
 
   <div class="grid">
-    <div class="card" style="grid-column: span 2;">
+    <div class="card" style="grid-column:span 2;">
       <h2>📺 風扇紅外線遙控 & 步進馬達微調 (手動模式專用)</h2>
+
       <div class="btn-group-3">
         <button onclick="publish('smarthome/ir/cmd', 'OPEN', this)">風扇開啟</button>
         <button class="btn-off" onclick="publish('smarthome/ir/cmd', 'CLOSE', this)">風扇關閉</button>
@@ -111,8 +221,9 @@ button:active{transform:scale(0.98);}
         <button onclick="publish('smarthome/ir/cmd', 'DOWN', this)">風速 -</button>
         <button class="btn-purple" onclick="publish('smarthome/line/query', 'REQ', this)">LINE主動查詢</button>
       </div>
-      
-      <h3 style="font-size:15px; color:#cbd5e1; margin-top:20px; margin-bottom:8px;">🤖 步進馬達底座角度微調</h3>
+
+      <h3 style="font-size:15px;color:#cbd5e1;margin-top:20px;margin-bottom:8px;">🤖 步進馬達底座角度微調</h3>
+
       <div class="btn-group-3">
         <button onclick="publish('smarthome/ir/cmd', 'STEP=LEFT', this)">◀ 左轉微調</button>
         <button style="background:#e67e22;" onclick="publish('smarthome/ir/cmd', 'STEP=CENTER', this)">居中導正 📍</button>
@@ -130,8 +241,148 @@ button:active{transform:scale(0.98);}
 </div>
 
 <script>
+// ===== Firebase =====
+const firebaseConfig = {
+  apiKey: "AIzaSyBWAR545ZiCCAL49PqhbeYVl5eZ9iXnBr8",
+  authDomain: "smart-home-security-b06fe.firebaseapp.com",
+  databaseURL: "https://smart-home-security-b06fe-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "smart-home-security-b06fe",
+  storageBucket: "smart-home-security-b06fe.firebasestorage.app",
+  messagingSenderId: "592787545772",
+  appId: "1:592787545772:web:3c29eb9f326e919b04c909",
+  measurementId: "G-M29H6DB7YD"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+
+// ===== 登入 / 註冊 =====
+document.addEventListener("DOMContentLoaded", () => {
+
+  const INVITE_CODE = "123456";
+
+  const loginBtn = document.getElementById("loginBtn");
+  const registerBtn = document.getElementById("registerBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  function unlockApp(){
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("app").style.display = "block";
+  }
+
+  if(localStorage.getItem("isLoggedIn") === "true"){
+    unlockApp();
+  }
+
+  loginBtn.addEventListener("click", async () => {
+    const user = document.getElementById("loginUsername").value.trim();
+    const pass = document.getElementById("loginPassword").value;
+    const msg = document.getElementById("loginMsg");
+
+    msg.style.color = "#fca5a5";
+    msg.textContent = "";
+
+    if(user === "" || pass === ""){
+      msg.textContent = "請輸入帳號與密碼";
+      return;
+    }
+
+    try{
+      const snapshot = await db.ref("users/" + user).once("value");
+
+      if(!snapshot.exists()){
+        msg.textContent = "帳號不存在";
+        return;
+      }
+
+      const data = snapshot.val();
+
+      if(data.password === pass){
+
+        if(document.getElementById("rememberLogin").checked){
+          localStorage.setItem("isLoggedIn", "true");
+          localStorage.setItem("loginUser", user);
+        }
+
+        unlockApp();
+
+      }else{
+        msg.textContent = "密碼錯誤";
+      }
+
+    }catch(error){
+      console.log(error);
+      msg.textContent = "雲端登入失敗";
+    }
+  });
+
+  registerBtn.addEventListener("click", async () => {
+    const user = document.getElementById("registerUsername").value.trim();
+    const pass = document.getElementById("registerPassword").value;
+    const code = document.getElementById("registerCode").value.trim();
+    const msg = document.getElementById("registerMsg");
+
+    msg.style.color = "#fca5a5";
+    msg.textContent = "";
+
+    if(code !== INVITE_CODE){
+      msg.textContent = "金鑰錯誤";
+      return;
+    }
+
+    if(user.length < 3){
+      msg.textContent = "帳號至少需要 3 個字元";
+      return;
+    }
+
+    if(pass.length < 6){
+      msg.textContent = "密碼至少需要 6 個字元";
+      return;
+    }
+
+    try{
+      const snapshot = await db.ref("users/" + user).once("value");
+
+      if(snapshot.exists()){
+        msg.textContent = "帳號已存在";
+        return;
+      }
+
+      await db.ref("users/" + user).set({
+        username:user,
+        password:pass,
+        createdAt:Date.now()
+      });
+
+      msg.style.color = "#86efac";
+      msg.textContent = "註冊成功 ✔ 請登入";
+
+      document.getElementById("registerUsername").value = "";
+      document.getElementById("registerPassword").value = "";
+      document.getElementById("registerCode").value = "";
+
+    }catch(error){
+      console.log(error);
+      msg.textContent = "雲端註冊失敗";
+    }
+  });
+
+  logoutBtn.addEventListener("click", () => {
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("loginUser");
+
+    document.getElementById("app").style.display = "none";
+    document.getElementById("loginScreen").style.display = "flex";
+    document.getElementById("loginPassword").value = "";
+    document.getElementById("loginMsg").textContent = "";
+  });
+
+});
+
+
 // ================= MQTT 設定區 =================
-const MQTT_SERVER = "wss://broker.emqx.io:8084/mqtt"; // 使用安全加密的 WebSockets 通道
+const MQTT_SERVER = "wss://broker.emqx.io:8084/mqtt";
 const CLIENT_ID = "Web_Dashboard_" + Math.random().toString(16).substr(2, 8);
 
 let gas1 = 0, gas2 = 0;
@@ -139,12 +390,11 @@ const GAS_LIMIT = 1000;
 
 const client = mqtt.connect(MQTT_SERVER, { clientId: CLIENT_ID });
 
-client.on('connect', () => {
+client.on("connect", () => {
   const statusTag = document.getElementById("mqttStatus");
   statusTag.textContent = "已連線";
   statusTag.className = "status-tag online";
 
-  // 訂閱所有硬體上報的狀態 Topic
   client.subscribe("smarthome/room1/temp");
   client.subscribe("smarthome/room1/humi");
   client.subscribe("smarthome/room1/gas");
@@ -154,42 +404,58 @@ client.on('connect', () => {
   client.subscribe("smarthome/relay/state");
   client.subscribe("smarthome/alarm/gas");
   client.subscribe("smarthome/status");
-  client.subscribe("smarthome/mode/state"); // 訂閱硬體當前模式
+  client.subscribe("smarthome/mode/state");
 });
 
-client.on('error', (err) => {
+client.on("error", (err) => {
   console.error("MQTT 連線錯誤:", err);
   const statusTag = document.getElementById("mqttStatus");
   statusTag.textContent = "連線錯誤";
   statusTag.className = "status-tag offline";
 });
 
-client.on('message', (topic, message) => {
+client.on("message", (topic, message) => {
   const msg = message.toString().trim();
-  
-  // 動態解析收到的主題並渲染到網頁 UI
-  if (topic === "smarthome/room1/temp") document.getElementById("r1-temp").textContent = msg;
-  else if (topic === "smarthome/room1/humi") document.getElementById("r1-humi").textContent = msg;
-  else if (topic === "smarthome/room1/gas") { gas1 = parseInt(msg) || 0; document.getElementById("r1-gas").textContent = msg; updateGasAlert(); }
-  else if (topic === "smarthome/room2/temp") document.getElementById("r2-temp").textContent = msg;
-  else if (topic === "smarthome/room2/humi") document.getElementById("r2-humi").textContent = msg;
-  else if (topic === "smarthome/room2/gas") { gas2 = parseInt(msg) || 0; document.getElementById("r2-gas").textContent = msg; updateGasAlert(); }
-  
+
+  if (topic === "smarthome/room1/temp") {
+    document.getElementById("r1-temp").textContent = msg;
+  }
+  else if (topic === "smarthome/room1/humi") {
+    document.getElementById("r1-humi").textContent = msg;
+  }
+  else if (topic === "smarthome/room1/gas") {
+    gas1 = parseInt(msg) || 0;
+    document.getElementById("r1-gas").textContent = msg;
+    updateGasAlert();
+  }
+  else if (topic === "smarthome/room2/temp") {
+    document.getElementById("r2-temp").textContent = msg;
+  }
+  else if (topic === "smarthome/room2/humi") {
+    document.getElementById("r2-humi").textContent = msg;
+  }
+  else if (topic === "smarthome/room2/gas") {
+    gas2 = parseInt(msg) || 0;
+    document.getElementById("r2-gas").textContent = msg;
+    updateGasAlert();
+  }
   else if (topic === "smarthome/relay/state") {
-    document.getElementById("fanStateText").textContent = (msg === "1" ? "ON 🟢" : "OFF 🔴");
+    // 修正判斷：同時相容數字 1 或字串 ON 狀態
+    document.getElementById("fanStateText").textContent =
+      (msg === "1" || msg.toUpperCase() === "ON") ? "ON 🟢" : "OFF 🔴";
   }
   else if (topic === "smarthome/mode/state") {
-    document.getElementById("currentModeDisplay").textContent = (msg === "AUTO" ? "自動模式 🤖" : "手動模式 🎛️");
+    document.getElementById("currentModeDisplay").textContent =
+      msg === "AUTO" ? "自動模式 🤖" : "手動模式 🎛️";
     document.getElementById("modeSelect").value = msg;
   }
   else if (topic === "smarthome/alarm/gas") {
     document.getElementById("gasAlert").classList.toggle("show", msg === "1");
   }
-  
+
   updateTime();
 });
 
-// 瓦斯警報閃爍邏輯
 function updateGasAlert(){
   const alertBox = document.getElementById("gasAlert");
   if (gas1 >= GAS_LIMIT || gas2 >= GAS_LIMIT) {
@@ -199,35 +465,35 @@ function updateGasAlert(){
   }
 }
 
-// 更新即時時間
 function updateTime(){
   const now = new Date();
   document.getElementById("timeStr").textContent = now.toLocaleTimeString();
 }
 
-// 原本的 Loading 動畫處理
 function loading(btn){
   if (!btn) return;
   btn.classList.add("loading");
   setTimeout(() => btn.classList.remove("loading"), 500);
 }
 
-// 發送 MQTT 指令
 function publish(topic, msg, btn){
   if (!client.connected) {
     alert("MQTT 尚未連線，請檢查網路狀態！");
     return;
   }
+
   loading(btn);
+
   client.publish(topic, msg, {qos:1, retain:false}, err => {
     if (err) console.error("發送失敗：", topic, msg);
   });
 }
 
-// 模式選單連動發送
+// 修正點：將此控制模式函式移出 DOMContentLoaded 外層，確保 HTML 上的 onchange 能夠正常抓取呼叫
 function changeSystemMode(val) {
   publish("smarthome/mode/cmd", val, null);
 }
 </script>
+
 </body>
 </html>
