@@ -231,6 +231,133 @@ button:active{transform:scale(0.98);}
   </div>
 </div>
 
+// ===== Firebase =====
+const firebaseConfig = {
+  apiKey: "AIzaSyBWAR545ZiCCAL49PqhbeYVl5eZ9iXnBr8",
+  authDomain: "smart-home-security-b06fe.firebaseapp.com",
+  databaseURL: "https://smart-home-security-b06fe-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "smart-home-security-b06fe",
+  storageBucket: "smart-home-security-b06fe.firebasestorage.app",
+  messagingSenderId: "592787545772",
+  appId: "1:592787545772:web:3c29eb9f326e919b04c909",
+  measurementId: "G-M29H6DB7YD"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+
+// ===== 登入 / 註冊 =====
+document.addEventListener("DOMContentLoaded", () => {
+
+  const INVITE_CODE = "123456";
+
+  const loginBtn = document.getElementById("loginBtn");
+  const registerBtn = document.getElementById("registerBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
+
+  function unlockApp(){
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("app").style.display = "block";
+  }
+
+  loginBtn.addEventListener("click", async () => {
+    const user = document.getElementById("loginUsername").value.trim();
+    const pass = document.getElementById("loginPassword").value;
+    const msg = document.getElementById("loginMsg");
+
+    msg.style.color = "#fca5a5";
+    msg.textContent = "";
+
+    if(user === "" || pass === ""){
+      msg.textContent = "請輸入帳號與密碼";
+      return;
+    }
+
+    try{
+      const snapshot = await db.ref("users/" + user).once("value");
+
+      if(!snapshot.exists()){
+        msg.textContent = "帳號不存在";
+        return;
+      }
+
+      const data = snapshot.val();
+
+      if(data.password === pass){
+        unlockApp();
+      }else{
+        msg.textContent = "密碼錯誤";
+      }
+
+    }catch(error){
+      console.log(error);
+      msg.textContent = "雲端登入失敗";
+    }
+  });
+
+  registerBtn.addEventListener("click", async () => {
+    const user = document.getElementById("registerUsername").value.trim();
+    const pass = document.getElementById("registerPassword").value;
+    const code = document.getElementById("registerCode").value.trim();
+    const msg = document.getElementById("registerMsg");
+
+    msg.style.color = "#fca5a5";
+    msg.textContent = "";
+
+    if(code !== INVITE_CODE){
+      msg.textContent = "金鑰錯誤";
+      return;
+    }
+
+    if(user.length < 3){
+      msg.textContent = "帳號至少需要 3 個字元";
+      return;
+    }
+
+    if(pass.length < 6){
+      msg.textContent = "密碼至少需要 6 個字元";
+      return;
+    }
+
+    try{
+      const snapshot = await db.ref("users/" + user).once("value");
+
+      if(snapshot.exists()){
+        msg.textContent = "帳號已存在";
+        return;
+      }
+
+      await db.ref("users/" + user).set({
+        username:user,
+        password:pass,
+        createdAt:Date.now()
+      });
+
+      msg.style.color = "#86efac";
+      msg.textContent = "註冊成功 ✔ 請登入";
+
+      document.getElementById("registerUsername").value = "";
+      document.getElementById("registerPassword").value = "";
+      document.getElementById("registerCode").value = "";
+
+    }catch(error){
+      console.log(error);
+      msg.textContent = "雲端註冊失敗";
+    }
+  });
+
+  if(logoutBtn){
+    logoutBtn.addEventListener("click", () => {
+      document.getElementById("app").style.display = "none";
+      document.getElementById("loginScreen").style.display = "flex";
+      document.getElementById("loginPassword").value = "";
+      document.getElementById("loginMsg").textContent = "";
+    });
+  }
+
+});
+ 
 <script>
 // ================= MQTT 設定區 =================
 const MQTT_SERVER = "wss://broker.emqx.io:8084/mqtt"; // 使用安全加密的 WebSockets 通道
