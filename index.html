@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AIOT 智慧安防監控面板</title>
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js" type="text/javascript"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
 
   <style>
     body {
@@ -17,7 +17,7 @@
     }
 
     .container {
-      max-width: 900px;
+      max-width: 1000px;
       margin: 0 auto;
       background: white;
       padding: 25px;
@@ -97,17 +97,10 @@
       box-shadow: 0 2px 5px rgba(0,0,0,0.05);
     }
 
-    .card.temp {
-      border-left-color: #ffc000;
-    }
-
-    .card.hum {
-      border-left-color: #00b0f0;
-    }
-
-    .card.gas {
-      border-left-color: #7030a0;
-    }
+    .card.temp { border-left-color: #ffc000; }
+    .card.hum { border-left-color: #00b0f0; }
+    .card.gas { border-left-color: #7030a0; }
+    .card.state { border-left-color: #2ed573; }
 
     .value {
       font-size: 1.8rem;
@@ -132,7 +125,7 @@
       cursor: pointer;
       margin-right: 10px;
       margin-bottom: 10px;
-      transition: background 0.2s, transform 0.1s;
+      transition: 0.2s;
     }
 
     .btn:hover {
@@ -144,20 +137,10 @@
       transform: scale(0.96);
     }
 
-    .btn-green {
-      background: #2ed573;
-      color: white;
-    }
-
-    .btn-blue {
-      background: #1e90ff;
-      color: white;
-    }
-
-    .btn-red {
-      background: #ff4757;
-      color: white;
-    }
+    .btn-green { background: #2ed573; color: white; }
+    .btn-blue { background: #1e90ff; color: white; }
+    .btn-red { background: #ff4757; color: white; }
+    .btn-purple { background: #7c3aed; color: white; }
 
     .log {
       margin-top: 20px;
@@ -172,13 +155,8 @@
     }
 
     @keyframes blink {
-      from {
-        box-shadow: 0 0 5px #ff4757;
-      }
-
-      to {
-        box-shadow: 0 0 15px #ff4757;
-      }
+      from { box-shadow: 0 0 5px #ff4757; }
+      to { box-shadow: 0 0 15px #ff4757; }
     }
   </style>
 </head>
@@ -228,6 +206,16 @@
       <div>⚠️ 房間 2 瓦斯</div>
       <div id="v-g2" class="value">---- ppm</div>
     </div>
+
+    <div class="card state">
+      <div>🔐 人臉登入</div>
+      <div id="v-unlocked" class="value">--</div>
+    </div>
+
+    <div class="card state">
+      <div>🌬️ Relay 狀態</div>
+      <div id="v-relay" class="value">--</div>
+    </div>
   </div>
 
   <div class="control-section">
@@ -246,8 +234,7 @@
   </div>
 
   <div class="control-section">
-    <h3>全手動家電控制 (僅在手動模式有效)</h3>
-
+    <h3>全手動家電控制</h3>
     <button class="btn btn-blue" onclick="sendMQTT('smarthome/relay/cmd', 'ON')">
       開啟排風扇
     </button>
@@ -258,7 +245,14 @@
   </div>
 
   <div class="control-section">
-    <h3>實體風扇紅外線遙控 (YS-IRTM 轉發)</h3>
+    <h3>實體風扇紅外線遙控</h3>
+    <button class="btn btn-green" onclick="sendMQTT('smarthome/ir/cmd', 'OPEN')">
+      📺 開風扇 + 風量+
+    </button>
+
+    <button class="btn btn-red" onclick="sendMQTT('smarthome/ir/cmd', 'CLOSE')">
+      📺 關風扇
+    </button>
 
     <button class="btn btn-green" onclick="sendMQTT('smarthome/ir/cmd', 'UP')">
       📺 風扇速 ＋
@@ -273,31 +267,34 @@
     </button>
   </div>
 
+  <div class="control-section">
+    <h3>步進馬達手動控制</h3>
+    <button class="btn btn-purple" onclick="sendMQTT('smarthome/stepper/cmd', 'LEFT')">
+      ⬅️ 左轉
+    </button>
+
+    <button class="btn btn-purple" onclick="sendMQTT('smarthome/stepper/cmd', 'CENTER')">
+      🎯 回中心
+    </button>
+
+    <button class="btn btn-purple" onclick="sendMQTT('smarthome/stepper/cmd', 'RIGHT')">
+      ➡️ 右轉
+    </button>
+  </div>
+
   <div class="log" id="log">
     系統訊息...
   </div>
 </div>
 
 <script>
-  // ===== EMQX WebSocket MQTT =====
   const MQTT_HOST = "broker.emqx.io";
-
-  // 如果網頁放 GitHub Pages / HTTPS，建議用 8084 + SSL
   const MQTT_PORT = 8084;
+  const CLIENT_ID = "WebClient_" + Math.random().toString(16).substr(2, 8);
 
-  const CLIENT_ID =
-    "WebClient_" +
-    Math.random().toString(16).substr(2, 8);
+  const client = new Paho.MQTT.Client(MQTT_HOST, MQTT_PORT, CLIENT_ID);
 
-  const client =
-    new Paho.MQTT.Client(
-      MQTT_HOST,
-      MQTT_PORT,
-      CLIENT_ID
-    );
-
-  const TOPIC_STATUS_REPORT =
-    "smarthome/status/report";
+  const TOPIC_STATUS_REPORT = "smarthome/status/report";
 
   function log(msg) {
     const logBox = document.getElementById("log");
@@ -309,8 +306,7 @@
   }
 
   function setMqttStatus(isConnected, text) {
-    const status =
-      document.getElementById("mqtt-status");
+    const status = document.getElementById("mqtt-status");
 
     status.innerText = text;
 
@@ -335,10 +331,8 @@
 
   client.onMessageArrived = function(message) {
     try {
-      let data =
-        JSON.parse(message.payloadString);
+      let data = JSON.parse(message.payloadString);
 
-      // 防止 ESP 傳字串時 toFixed 出錯
       const t1 = Number(data.t1 || 0);
       const h1 = Number(data.h1 || 0);
       const g1 = Number(data.g1 || 0);
@@ -347,29 +341,22 @@
       const h2 = Number(data.h2 || 0);
       const g2 = Number(data.g2 || 0);
 
-      document.getElementById("v-t1").innerText =
-        t1.toFixed(1) + " °C";
+      const relay = Number(data.relay || 0);
+      const unlocked = Number(data.unlocked || 0);
 
-      document.getElementById("v-h1").innerText =
-        h1.toFixed(1) + " %";
+      document.getElementById("v-t1").innerText = t1.toFixed(1) + " °C";
+      document.getElementById("v-h1").innerText = h1.toFixed(1) + " %";
+      document.getElementById("v-g1").innerText = g1 + " ppm";
 
-      document.getElementById("v-g1").innerText =
-        g1 + " ppm";
+      document.getElementById("v-t2").innerText = t2.toFixed(1) + " °C";
+      document.getElementById("v-h2").innerText = h2.toFixed(1) + " %";
+      document.getElementById("v-g2").innerText = g2 + " ppm";
 
-      document.getElementById("v-t2").innerText =
-        t2.toFixed(1) + " °C";
+      document.getElementById("v-relay").innerText = relay === 1 ? "ON" : "OFF";
+      document.getElementById("v-unlocked").innerText = unlocked === 1 ? "已解鎖" : "未解鎖";
 
-      document.getElementById("v-h2").innerText =
-        h2.toFixed(1) + " %";
-
-      document.getElementById("v-g2").innerText =
-        g2 + " ppm";
-
-      let modeBanner =
-        document.getElementById("mode-status");
-
-      let modeText =
-        document.getElementById("txt-mode");
+      let modeBanner = document.getElementById("mode-status");
+      let modeText = document.getElementById("txt-mode");
 
       modeBanner.className = "mode-banner";
 
@@ -427,9 +414,7 @@
       return;
     }
 
-    let message =
-      new Paho.MQTT.Message(payload);
-
+    let message = new Paho.MQTT.Message(payload);
     message.destinationName = topic;
     message.qos = 1;
     message.retained = false;
