@@ -50,6 +50,76 @@ button:active{transform:scale(0.98);}
 .loading{position:relative;color:transparent!important;}
 .loading::after{content:"";position:absolute;width:16px;height:16px;top:50%;left:50%;margin-top:-8px;margin-left:-8px;border:2px solid white;border-top-color:transparent;border-radius:50%;animation:spin 0.6s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
+
+ #app{
+  display:none;
+}
+
+#loginScreen{
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:linear-gradient(135deg,#020617,#0f172a,#1e293b);
+  z-index:9999;
+}
+
+.login-card{
+  width:min(400px,92vw);
+  background:#1e293b;
+  border:1px solid #334155;
+  border-radius:22px;
+  padding:24px;
+  box-shadow:0 20px 60px rgba(0,0,0,.45);
+}
+
+.login-card h2{
+  text-align:center;
+  margin:0 0 8px;
+}
+
+.login-subtitle{
+  text-align:center;
+  color:#cbd5e1;
+  font-size:14px;
+  margin-bottom:18px;
+}
+
+.login-card label{
+  display:block;
+  margin:10px 0 6px;
+  color:#cbd5e1;
+}
+
+.login-card input{
+  width:78%;
+  padding:10px 12px;
+  border-radius:12px;
+  border:1px solid #334155;
+  background:#020617;
+  color:white;
+  margin:0 auto 10px;
+  display:block;
+}
+
+.login-card button{
+  width:82%;
+  margin:10px auto;
+  display:block;
+}
+
+.divider{
+  height:1px;
+  background:#334155;
+  margin:18px 0;
+}
+
+.msg{
+  min-height:22px;
+  text-align:center;
+  font-size:14px;
+} 
 </style>
 </head>
 <body>
