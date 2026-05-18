@@ -1,564 +1,152 @@
-<!DOCTYPE html>
-<html lang="zh-TW">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>智慧居家控制</title>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
-
-  <style>
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      font-family: Arial, "Microsoft JhengHei", sans-serif;
-      background: #0f172a;
-      color: #ffffff;
-    }
-
-    #app { display:none; }
-
-    .wrap {
-      max-width: 1200px;
-      margin: auto;
-      padding: 24px;
-    }
-
-    .header {
-      background: linear-gradient(135deg, #1e3a8a, #0f172a);
-      padding: 28px;
-      border-radius: 20px;
-      border: 1px solid #334155;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
-      margin-bottom: 20px;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: 36px;
-      letter-spacing: 2px;
-    }
-
-    .subtitle {
-      margin-top: 10px;
-      color: #cbd5e1;
-      font-size: 16px;
-    }
-
-    .top-status {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 18px;
-      align-items: center;
-    }
-
-    .status-pill {
-      padding: 10px 16px;
-      border-radius: 999px;
-      background: #1e293b;
-      border: 1px solid #334155;
-      font-weight: bold;
-      color: #e2e8f0;
-    }
-
-    .connected { background: #065f46; color: #d1fae5; border-color: #10b981; }
-    .disconnected { background: #7f1d1d; color: #fecaca; border-color: #ef4444; }
-
-    .mode-banner {
-      padding: 10px 18px;
-      border-radius: 999px;
-      font-weight: bold;
-      border: 1px solid #334155;
-      background: #1e293b;
-      color: #e2e8f0;
-    }
-
-    .mode-auto { background: #064e3b; color: #d1fae5; border-color: #10b981; }
-    .mode-manual { background: #1e3a8a; color: #dbeafe; border-color: #3b82f6; }
-
-    .mode-security {
-      background: #7f1d1d;
-      color: #fecaca;
-      border-color: #ef4444;
-      animation: blink 1.2s infinite alternate;
-    }
-
-    @keyframes blink {
-      from { box-shadow: 0 0 6px rgba(239,68,68,0.4); }
-      to { box-shadow: 0 0 18px rgba(239,68,68,0.9); }
-    }
-
-    .section-title {
-      margin: 28px 0 12px;
-      font-size: 24px;
-      color: #bfdbfe;
-      border-left: 6px solid #3b82f6;
-      padding-left: 12px;
-    }
-
-    .rooms {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-      gap: 18px;
-    }
-
-    .room-card,
-    .state-card,
-    .control-card {
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 20px;
-      padding: 20px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-    }
-
-    .room-title {
-      font-size: 24px;
-      font-weight: bold;
-      margin-bottom: 16px;
-      color: #93c5fd;
-    }
-
-    .sensor-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-    }
-
-    .sensor-box {
-      background: #0f172a;
-      border: 1px solid #334155;
-      border-radius: 16px;
-      padding: 16px;
-      text-align: center;
-    }
-
-    .sensor-label {
-      color: #94a3b8;
-      font-size: 14px;
-      margin-bottom: 8px;
-    }
-
-    .sensor-value {
-      font-size: 28px;
-      font-weight: bold;
-      color: #ffffff;
-    }
-
-    .sensor-unit {
-      font-size: 14px;
-      color: #cbd5e1;
-      margin-top: 4px;
-    }
-
-    .state-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
-      margin-top: 18px;
-    }
-
-    .state-title {
-      color: #cbd5e1;
-      margin-bottom: 10px;
-      font-size: 15px;
-    }
-
-    .state-value {
-      font-size: 26px;
-      font-weight: bold;
-      color: #ffffff;
-    }
-
-    .controls {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-      gap: 18px;
-      margin-top: 18px;
-    }
-
-    .control-card h3 {
-      margin: 0 0 14px;
-      color: #bfdbfe;
-      font-size: 20px;
-    }
-
-    button {
-      padding: 12px 18px;
-      margin: 6px 6px 6px 0;
-      border: none;
-      border-radius: 12px;
-      color: white;
-      font-weight: bold;
-      font-size: 15px;
-      cursor: pointer;
-      transition: transform 0.12s, opacity 0.12s, box-shadow 0.12s;
-    }
-
-    button:hover {
-      opacity: 0.92;
-      transform: translateY(-1px);
-      box-shadow: 0 6px 18px rgba(0,0,0,0.25);
-    }
-
-    button:active { transform: scale(0.96); }
-
-    .btn-blue { background: #2563eb; }
-    .btn-green { background: #16a34a; }
-    .btn-red { background: #dc2626; }
-    .btn-purple { background: #7c3aed; }
-    .btn-orange { background: #ea580c; }
-
-    .alert {
-      display: none;
-      margin-top: 18px;
-      padding: 16px;
-      border-radius: 16px;
-      background: #7f1d1d;
-      color: #fecaca;
-      font-weight: bold;
-      border: 1px solid #ef4444;
-      animation: blink 1s infinite alternate;
-    }
-
-    .alert.show { display: block; }
-
-    .log {
-      margin-top: 20px;
-      background: #020617;
-      border: 1px solid #334155;
-      color: #cbd5e1;
-      padding: 14px;
-      border-radius: 16px;
-      height: 120px;
-      overflow-y: auto;
-      font-size: 14px;
-    }
-
-    /* ===== Glassmorphism 登入介面 ===== */
-
-    #loginScreen{
-      position: fixed;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background:
-        radial-gradient(circle at top left, rgba(59,130,246,.35), transparent 35%),
-        radial-gradient(circle at bottom right, rgba(124,58,237,.35), transparent 35%),
-        linear-gradient(135deg,#020617,#0f172a,#1e293b);
-      z-index: 9999;
-      padding: 20px;
-    }
-
-    .login-shell{
-      width: min(920px, 96vw);
-      min-height: 560px;
-      display: grid;
-      grid-template-columns: 0.9fr 1.1fr;
-      border-radius: 28px;
-      overflow: hidden;
-      background: rgba(15,23,42,.48);
-      backdrop-filter: blur(18px);
-      -webkit-backdrop-filter: blur(18px);
-      border: 1px solid rgba(255,255,255,.14);
-      box-shadow: 0 30px 80px rgba(0,0,0,.55);
-    }
-
-    .glass-sidebar{
-      padding: 34px;
-      background:
-        linear-gradient(160deg, rgba(37,99,235,.40), rgba(15,23,42,.12)),
-        rgba(255,255,255,.06);
-      border-right: 1px solid rgba(255,255,255,.12);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-    }
-
-    .glass-logo{
-      width: 62px;
-      height: 62px;
-      border-radius: 20px;
-      background: rgba(255,255,255,.16);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 30px;
-      box-shadow: inset 0 0 18px rgba(255,255,255,.08);
-      margin-bottom: 18px;
-    }
-
-    .glass-sidebar h2{
-      font-size: 32px;
-      margin: 0 0 12px;
-      line-height: 1.25;
-    }
-
-    .glass-sidebar p{
-      color: #cbd5e1;
-      line-height: 1.7;
-      font-size: 15px;
-    }
-
-    .glass-points{
-      margin-top: 24px;
-      display: grid;
-      gap: 12px;
-    }
-
-    .glass-point{
-      padding: 12px 14px;
-      border-radius: 16px;
-      background: rgba(255,255,255,.08);
-      border: 1px solid rgba(255,255,255,.10);
-      color: #e2e8f0;
-      font-size: 14px;
-    }
-
-    .login-card{
-      padding: 38px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      background: rgba(2,6,23,.20);
-    }
-
-    .login-card h2{
-      margin: 0 0 8px;
-      font-size: 28px;
-      text-align: center;
-    }
-
-    .login-subtitle{
-      text-align: center;
-      color: #cbd5e1;
-      font-size: 14px;
-      margin-bottom: 18px;
-    }
-
-    .tab-row{
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      margin-bottom: 18px;
-      background: rgba(15,23,42,.7);
-      padding: 6px;
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,.10);
-    }
-
-    .tab-btn{
-      margin: 0;
-      border-radius: 12px;
-      background: transparent;
-      color: #cbd5e1;
-    }
-
-    .tab-btn.active{
-      background: linear-gradient(135deg,#2563eb,#38bdf8);
-      color: white;
-    }
-
-    .auth-panel{
-      display: none;
-    }
-
-    .auth-panel.active{
-      display: block;
-    }
-
-    .login-card label{
-      display: block;
-      margin: 12px 0 6px;
-      color: #cbd5e1;
-      font-size: 14px;
-    }
-
-    .login-card input[type="text"],
-    .login-card input[type="password"]{
-      width: 100%;
-      padding: 13px 14px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,.12);
-      background: rgba(2,6,23,.72);
-      color: white;
-      outline: none;
-    }
-
-    .login-card input:focus{
-      border-color: #38bdf8;
-      box-shadow: 0 0 0 3px rgba(56,189,248,.16);
-    }
-
-    .remember-row{
-      display: flex !important;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      margin: 14px 0 !important;
-      color: #cbd5e1;
-      font-size: 14px;
-    }
-
-    .remember-row input{
-      width: auto !important;
-      margin: 0 !important;
-    }
-
-    #loginBtn{
-      width: 100%;
-      background: linear-gradient(135deg,#2563eb,#38bdf8);
-      margin-top: 8px;
-    }
-
-    #registerBtn{
-      width: 100%;
-      background: linear-gradient(135deg,#16a34a,#2dd4bf);
-      margin-top: 14px;
-    }
-
-    .msg{
-      min-height: 22px;
-      text-align: center;
-      margin-top: 10px;
-      font-size: 14px;
-    }
-
-    .login-hint{
-      color: #94a3b8;
-      text-align: center;
-      font-size: 13px;
-      margin-top: 12px;
-    }
-
-    @media (max-width: 760px) {
-      .login-shell{
-        grid-template-columns: 1fr;
-      }
-
-      .glass-sidebar{
-        display: none;
-      }
-    }
-
-    @media (max-width: 600px) {
-      h1 { font-size: 28px; }
-      .sensor-grid { grid-template-columns: 1fr; }
-      button { width: 100%; }
-    }
-  </style>
-</head>
-
-<body>
-
-<div id="loginScreen">
-  <div class="login-shell">
-
-    <aside class="glass-sidebar">
-      <div>
-        <div class="glass-logo">🏠</div>
-        <h2>AIOT 智慧居家安全系統</h2>
-        <p>整合環境監測、遠端控制、人臉追蹤、手勢控制與深夜防盜警報。</p>
-
-        <div class="glass-points">
-          <div class="glass-point">🔐 Firebase 雲端帳號登入</div>
-          <div class="glass-point">📡 MQTT 即時遠端控制</div>
-          <div class="glass-point">🤖 HuskyLens AI 辨識整合</div>
-        </div>
-      </div>
-
-      <div style="color:#94a3b8;font-size:13px;">
-        Smart Home Security Control Panel
-      </div>
-    </aside>
-
-    <div class="login-card">
-      <h2>智慧居家安全登入</h2>
-      <div class="login-subtitle">請先登入後進入控制介面</div>
-
-      <div class="tab-row">
-        <button id="showLoginTab" class="tab-btn active" type="button">登入</button>
-        <button id="showRegisterTab" class="tab-btn" type="button">註冊</button>
-      </div>
-
-      <div id="loginPanel" class="auth-panel active">
-        <label>帳號</label>
-        <input id="loginUsername" type="text" placeholder="請輸入帳號">
-
-        <label>密碼</label>
-        <input id="loginPassword" type="password" placeholder="請輸入密碼">
-
-        <label class="remember-row">
-          <input id="rememberLogin" type="checkbox">
-          保持登入
-        </label>
-
-        <button id="loginBtn" type="button">登入</button>
-        <div id="loginMsg" class="msg"></div>
-      </div>
-
-      <div id="registerPanel" class="auth-panel">
-        <label>新帳號</label>
-        <input id="registerUsername" type="text" placeholder="至少 3 個字元">
-
-        <label>新密碼</label>
-        <input id="registerPassword" type="password" placeholder="至少 6 個字元">
-
-        <label>金鑰</label>
-        <input id="registerCode" type="password" placeholder="請輸入金鑰">
-
-        <button id="registerBtn" type="button">建立帳號</button>
-        <div id="registerMsg" class="msg"></div>
-
-        <div class="login-hint">金鑰請向管理員取得</div>
-      </div>
+<div class="top-status">
+  <div id="mqtt-status" class="status-pill disconnected">MQTT：連線中...</div>
+
+  <div id="mode-status" class="mode-banner mode-auto">
+    系統模式：<span id="txt-mode">連線中...</span>
+  </div>
+
+  <div class="status-pill">
+    最後更新：<span id="last-update">--</span>
+  </div>
+</div>
+
+<div id="gas-alert" class="alert">
+  🚨 瓦斯濃度超標！系統已啟動安全警報
+</div>
+
+<div id="security-alert" class="alert">
+  🚨 深夜防盜警報！偵測到未註冊人臉
+</div>
+
+<div class="room-card">
+  <div class="room-title">房間 1</div>
+
+  <div class="sensor-grid">
+    <div class="sensor-box">
+      <div class="sensor-label">🌡️ 溫度</div>
+      <div id="v-t1" class="sensor-value">--.-</div>
+      <div class="sensor-unit">°C</div>
+    </div>
+
+    <div class="sensor-box">
+      <div class="sensor-label">💧 濕度</div>
+      <div id="v-h1" class="sensor-value">--.-</div>
+      <div class="sensor-unit">%</div>
+    </div>
+
+    <div class="sensor-box">
+      <div class="sensor-label">⚠️ 瓦斯</div>
+      <div id="v-g1" class="sensor-value">----</div>
+      <div class="sensor-unit">ppm</div>
     </div>
   </div>
 </div>
 
-<div id="app" class="wrap">
+<div class="room-card">
+  <div class="room-title">房間 2</div>
 
-  <div class="header">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
-      <h1>智慧居家控制</h1>
-      <button id="logoutBtn" class="btn-red" type="button">登出</button>
+  <div class="sensor-grid">
+    <div class="sensor-box">
+      <div class="sensor-label">🌡️ 溫度</div>
+      <div id="v-t2" class="sensor-value">--.-</div>
+      <div class="sensor-unit">°C</div>
     </div>
 
-    <div class="subtitle">AIOT 智慧環境監測、遠端控制、人臉追蹤、手勢控制與安全警報系統</div>
-
-    <div class="top-status">
-      <div id="mqtt-status" class="status-pill disconnected">MQTT：連線中...</div>
-
-      <div id="mode-status" class="mode-banner mode-auto">
-        系統模式：<span id="txt-mode">連線中...</span>
-      </div>
-
-      <div class="status-pill">
-        最後更新：<span id="last-update">--</span>
-      </div>
+    <div class="sensor-box">
+      <div class="sensor-label">💧 濕度</div>
+      <div id="v-h2" class="sensor-value">--.-</div>
+      <div class="sensor-unit">%</div>
     </div>
 
-    <div id="gas-alert" class="alert">
-      🚨 瓦斯濃度超標！系統已啟動安全警報
-    </div>
-
-    <div id="security-alert" class="alert">
-      🚨 深夜防盜警報！偵測到未註冊人臉
+    <div class="sensor-box">
+      <div class="sensor-label">⚠️ 瓦斯</div>
+      <div id="v-g2" class="sensor-value">----</div>
+      <div class="sensor-unit">ppm</div>
     </div>
   </div>
-
-  <!-- 你原本控制介面中間內容保留放這裡 -->
-
 </div>
 
-<script>
-// Firebase、登入註冊與 MQTT 程式可接你原本那段
-</script>
+<div class="state-card">
+  <div class="state-title">🌬️ Relay 排風扇</div>
+  <div id="v-relay" class="state-value">--</div>
+</div>
 
-</body>
-</html>
+<div class="state-card">
+  <div class="state-title">👮 防盜狀態</div>
+  <div id="v-intrude" class="state-value">--</div>
+</div>
+
+<div class="state-card">
+  <div class="state-title">📷 HuskyLens 模式</div>
+  <div id="v-husky" class="state-value">--</div>
+</div>
+
+<div class="state-card">
+  <div class="state-title">✋ 最近手勢</div>
+  <div id="v-gesture" class="state-value">--</div>
+</div>
+
+<div class="control-card">
+  <h3>系統模式切換</h3>
+  <button class="btn-green" onclick="sendMQTT('smarthome/mode/cmd', 'AUTO')">
+    ☀️ 自動模式
+  </button>
+  <button class="btn-blue" onclick="sendMQTT('smarthome/mode/cmd', 'MANUAL')">
+    🎛️ 手動模式
+  </button>
+  <button class="btn-red" onclick="sendMQTT('smarthome/mode/cmd', 'SECURITY')">
+    👮 深夜防盜
+  </button>
+</div>
+
+<div class="control-card">
+  <h3>HuskyLens 模式切換</h3>
+  <button class="btn-blue" onclick="sendMQTT('smarthome/husky/cmd', 'FACE')">
+    👤 人臉辨識模式
+  </button>
+  <button class="btn-purple" onclick="sendMQTT('smarthome/husky/cmd', 'HAND')">
+    ✋ 手勢辨識模式
+  </button>
+</div>
+
+<div class="control-card">
+  <h3>排風扇 Relay 控制</h3>
+  <button class="btn-blue" onclick="sendMQTT('smarthome/relay/cmd', 'ON')">
+    開啟排風扇
+  </button>
+  <button class="btn-red" onclick="sendMQTT('smarthome/relay/cmd', 'OFF')">
+    關閉排風扇
+  </button>
+</div>
+
+<div class="control-card">
+  <h3>紅外線風扇控制</h3>
+  <button class="btn-green" onclick="sendMQTT('smarthome/ir/cmd', 'OPEN')">
+    開風扇 + 風量+
+  </button>
+  <button class="btn-red" onclick="sendMQTT('smarthome/ir/cmd', 'CLOSE')">
+    關風扇
+  </button>
+  <button class="btn-blue" onclick="sendMQTT('smarthome/ir/cmd', 'UP')">
+    風量+
+  </button>
+  <button class="btn-blue" onclick="sendMQTT('smarthome/ir/cmd', 'DOWN')">
+    風量-
+  </button>
+  <button class="btn-orange" onclick="sendMQTT('smarthome/ir/cmd', 'SWING')">
+    擺頭
+  </button>
+</div>
+
+<div class="control-card">
+  <h3>步進馬達手動控制</h3>
+  <button class="btn-purple" onclick="sendMQTT('smarthome/stepper/cmd', 'LEFT')">
+    ⬅️ 左轉
+  </button>
+  <button class="btn-purple" onclick="sendMQTT('smarthome/stepper/cmd', 'CENTER')">
+    🎯 回中心
+  </button>
+  <button class="btn-purple" onclick="sendMQTT('smarthome/stepper/cmd', 'RIGHT')">
+    ➡️ 右轉
+  </button>
+</div>
