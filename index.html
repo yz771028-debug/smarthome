@@ -740,6 +740,19 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 });
+
+if(logoutBtn){
+  logoutBtn.addEventListener("click", () => {
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("loginUser");
+
+    document.getElementById("app").style.display = "none";
+    document.getElementById("loginScreen").style.display = "flex";
+    document.getElementById("loginPassword").value = "";
+    document.getElementById("loginMsg").textContent = "";
+  });
+}
+  
   
   const MQTT_HOST = "broker.emqx.io";
   const MQTT_PORT = 8084;
