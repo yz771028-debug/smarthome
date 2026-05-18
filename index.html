@@ -3,11 +3,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
-
   <title>智慧居家控制</title>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
@@ -109,12 +104,8 @@
     }
 
     @keyframes blink {
-      from {
-        box-shadow: 0 0 6px rgba(239,68,68,0.4);
-      }
-      to {
-        box-shadow: 0 0 18px rgba(239,68,68,0.9);
-      }
+      from { box-shadow: 0 0 6px rgba(239,68,68,0.4); }
+      to { box-shadow: 0 0 18px rgba(239,68,68,0.9); }
     }
 
     .section-title {
@@ -131,7 +122,9 @@
       gap: 18px;
     }
 
-    .room-card {
+    .room-card,
+    .state-card,
+    .control-card {
       background: #1e293b;
       border: 1px solid #334155;
       border-radius: 20px;
@@ -185,14 +178,6 @@
       margin-top: 18px;
     }
 
-    .state-card {
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 18px;
-      padding: 18px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
-    }
-
     .state-title {
       color: #cbd5e1;
       margin-bottom: 10px;
@@ -210,14 +195,6 @@
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 18px;
       margin-top: 18px;
-    }
-
-    .control-card {
-      background: #1e293b;
-      border: 1px solid #334155;
-      border-radius: 20px;
-      padding: 20px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
     }
 
     .control-card h3 {
@@ -248,25 +225,11 @@
       transform: scale(0.96);
     }
 
-    .btn-blue {
-      background: #2563eb;
-    }
-
-    .btn-green {
-      background: #16a34a;
-    }
-
-    .btn-red {
-      background: #dc2626;
-    }
-
-    .btn-purple {
-      background: #7c3aed;
-    }
-
-    .btn-orange {
-      background: #ea580c;
-    }
+    .btn-blue { background: #2563eb; }
+    .btn-green { background: #16a34a; }
+    .btn-red { background: #dc2626; }
+    .btn-purple { background: #7c3aed; }
+    .btn-orange { background: #ea580c; }
 
     .alert {
       display: none;
@@ -297,163 +260,20 @@
     }
 
     @media (max-width: 600px) {
-      h1 {
-        font-size: 28px;
-      }
-
-      .sensor-grid {
-        grid-template-columns: 1fr;
-      }
-
-      button {
-        width: 100%;
-      }
+      h1 { font-size: 28px; }
+      .sensor-grid { grid-template-columns: 1fr; }
+      button { width: 100%; }
     }
-    #app{
-  display:none;
-}
-
-#loginScreen{
-  position:fixed;
-  inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:linear-gradient(135deg,#020617,#0f172a,#1e293b);
-  z-index:9999;
-}
-
-.login-card{
-  width:min(400px,92vw);
-  background:rgba(30,41,59,.45);
-  backdrop-filter:blur(12px);
-  -webkit-backdrop-filter:blur(12px);
-  border:1px solid rgba(255,255,255,.1);
-  border-radius:22px;
-  padding:24px;
-  box-shadow:0 20px 40px rgba(0,0,0,.3);
-}
-
-.login-card h2{
-  text-align:center;
-  margin:0 0 8px;
-}
-
-.login-subtitle{
-  text-align:center;
-  color:#cbd5e1;
-  font-size:14px;
-  margin-bottom:18px;
-}
-
-.login-card label{
-  display:block;
-  margin:10px 0 6px;
-  color:#cbd5e1;
-}
-
-.login-card input[type="text"],
-.login-card input[type="password"]{
-  width:100%;
-  padding:10px 12px;
-  border-radius:12px;
-  border:1px solid rgba(255,255,255,.1);
-  background:rgba(15,23,42,.6);
-  color:white;
-  margin-bottom:10px;
-  display:block;
-}
-
-.login-card input:focus{
-  outline:none;
-  border-color:#38bdf8;
-}
-
-.login-card button{
-  width:100%;
-  margin:10px 0;
-}
-
-.remember-row{
-  display:flex!important;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  font-size:14px;
-  margin:10px 0!important;
-}
-
-.remember-row input{
-  width:auto!important;
-  margin:0!important;
-}
-
-.divider{
-  height:1px;
-  background:rgba(255,255,255,.1);
-  margin:18px 0;
-}
-
-.msg{
-  min-height:22px;
-  text-align:center;
-  font-size:14px;
-}
   </style>
 </head>
 
 <body>
-  <div id="loginScreen">
-  <div class="login-card">
-    <h2>智慧居家安全登入</h2>
-    <div class="login-subtitle">請先登入</div>
 
-    <label>帳號</label>
-    <input id="loginUsername" type="text" placeholder="請輸入帳號">
-
-    <label>密碼</label>
-    <input id="loginPassword" type="password" placeholder="請輸入密碼">
-
-    <label class="remember-row">
-      <input id="rememberLogin" type="checkbox">
-      保持登入
-    </label>
-
-    <button id="loginBtn" class="btn-blue" type="button">登入</button>
-    <div id="loginMsg" class="msg"></div>
-
-    <div class="divider"></div>
-
-    <h3>註冊帳號</h3>
-
-    <label>新帳號</label>
-    <input id="registerUsername" type="text" placeholder="至少 3 個字元">
-
-    <label>新密碼</label>
-    <input id="registerPassword" type="password" placeholder="至少 6 個字元">
-
-    <label>金鑰</label>
-    <input id="registerCode" type="password" placeholder="請輸入金鑰">
-
-    <button id="registerBtn" class="btn-green" type="button">建立帳號</button>
-    <div id="registerMsg" class="msg"></div>
-  </div>
-</div>
-
-<div id="app" class="wrap">
+<div class="wrap">
 
   <div class="header">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
-  <h1>智慧居家控制</h1>
-
-  <button
-    id="logoutBtn"
-    class="btn-red"
-    type="button">
-    登出
-  </button>
-</div>
-    <div class="subtitle">AIOT 智慧環境監測、遠端控制、人臉追蹤與安全警報系統</div>
+    <h1>智慧居家控制</h1>
+    <div class="subtitle">AIOT 智慧環境監測、遠端控制、人臉追蹤、手勢控制與安全警報系統</div>
 
     <div class="top-status">
       <div id="mqtt-status" class="status-pill disconnected">MQTT：連線中...</div>
@@ -544,8 +364,18 @@
     </div>
 
     <div class="state-card">
-      <div class="state-title">👮 防盜狀態-人臉識別</div>
+      <div class="state-title">👮 防盜狀態</div>
       <div id="v-intrude" class="state-value">--</div>
+    </div>
+
+    <div class="state-card">
+      <div class="state-title">📷 HuskyLens 模式</div>
+      <div id="v-husky" class="state-value">--</div>
+    </div>
+
+    <div class="state-card">
+      <div class="state-title">✋ 最近手勢</div>
+      <div id="v-gesture" class="state-value">--</div>
     </div>
   </div>
 
@@ -563,6 +393,16 @@
       </button>
       <button class="btn-red" onclick="sendMQTT('smarthome/mode/cmd', 'SECURITY')">
         👮 深夜防盜
+      </button>
+    </div>
+
+    <div class="control-card">
+      <h3>HuskyLens 模式切換</h3>
+      <button class="btn-blue" onclick="sendMQTT('smarthome/husky/cmd', 'FACE')">
+        👤 人臉辨識模式
+      </button>
+      <button class="btn-purple" onclick="sendMQTT('smarthome/husky/cmd', 'HAND')">
+        ✋ 手勢辨識模式
       </button>
     </div>
 
@@ -601,7 +441,7 @@
         ⬅️ 左轉
       </button>
       <button class="btn-purple" onclick="sendMQTT('smarthome/stepper/cmd', 'CENTER')">
-        🎯 置中
+        🎯 回中心
       </button>
       <button class="btn-purple" onclick="sendMQTT('smarthome/stepper/cmd', 'RIGHT')">
         ➡️ 右轉
@@ -617,143 +457,6 @@
 </div>
 
 <script>
-
-  // ===== Firebase =====
-const firebaseConfig = {
-  apiKey: "AIzaSyBWAR545ZiCCAL49PqhbeYVl5eZ9iXnBr8",
-  authDomain: "smart-home-security-b06fe.firebaseapp.com",
-  databaseURL: "https://smart-home-security-b06fe-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "smart-home-security-b06fe",
-  storageBucket: "smart-home-security-b06fe.firebasestorage.app",
-  messagingSenderId: "592787545772",
-  appId: "1:592787545772:web:3c29eb9f326e919b04c909",
-  measurementId: "G-M29H6DB7YD"
-};
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-document.addEventListener("DOMContentLoaded", () => {
-  const INVITE_CODE = "123456";
-
-  const loginBtn = document.getElementById("loginBtn");
-  const registerBtn = document.getElementById("registerBtn");
-  const logoutBtn = document.getElementById("logoutBtn");
-
-  function unlockApp(){
-    document.getElementById("loginScreen").style.display = "none";
-    document.getElementById("app").style.display = "block";
-  }
-
-  if(localStorage.getItem("isLoggedIn") === "true"){
-    unlockApp();
-  }
-
-  loginBtn.addEventListener("click", async () => {
-    const user = document.getElementById("loginUsername").value.trim();
-    const pass = document.getElementById("loginPassword").value;
-    const msg = document.getElementById("loginMsg");
-
-    msg.style.color = "#fca5a5";
-    msg.textContent = "";
-
-    if(user === "" || pass === ""){
-      msg.textContent = "請輸入帳號與密碼";
-      return;
-    }
-
-    try{
-      const snapshot = await db.ref("users/" + user).once("value");
-
-      if(!snapshot.exists()){
-        msg.textContent = "帳號不存在";
-        return;
-      }
-
-      const data = snapshot.val();
-
-      if(data.password === pass){
-        if(document.getElementById("rememberLogin").checked){
-          localStorage.setItem("isLoggedIn", "true");
-          localStorage.setItem("loginUser", user);
-        }
-
-        unlockApp();
-      }else{
-        msg.textContent = "密碼錯誤";
-      }
-
-    }catch(error){
-      console.log(error);
-      msg.textContent = "雲端登入失敗";
-    }
-  });
-
-  registerBtn.addEventListener("click", async () => {
-    const user = document.getElementById("registerUsername").value.trim();
-    const pass = document.getElementById("registerPassword").value;
-    const code = document.getElementById("registerCode").value.trim();
-    const msg = document.getElementById("registerMsg");
-
-    msg.style.color = "#fca5a5";
-    msg.textContent = "";
-
-    if(code !== INVITE_CODE){
-      msg.textContent = "金鑰錯誤";
-      return;
-    }
-
-    if(user.length < 3){
-      msg.textContent = "帳號至少需要 3 個字元";
-      return;
-    }
-
-    if(pass.length < 6){
-      msg.textContent = "密碼至少需要 6 個字元";
-      return;
-    }
-
-    try{
-      const snapshot = await db.ref("users/" + user).once("value");
-
-      if(snapshot.exists()){
-        msg.textContent = "帳號已存在";
-        return;
-      }
-
-      await db.ref("users/" + user).set({
-        username:user,
-        password:pass,
-        createdAt:Date.now()
-      });
-
-      msg.style.color = "#86efac";
-      msg.textContent = "註冊成功 ✔ 請登入";
-
-      document.getElementById("registerUsername").value = "";
-      document.getElementById("registerPassword").value = "";
-      document.getElementById("registerCode").value = "";
-
-    }catch(error){
-      console.log(error);
-      msg.textContent = "雲端註冊失敗";
-    }
-  });
-});
-
-if(logoutBtn){
-  logoutBtn.addEventListener("click", () => {
-    localStorage.removeItem("isLoggedIn");
-    localStorage.removeItem("loginUser");
-
-    document.getElementById("app").style.display = "none";
-    document.getElementById("loginScreen").style.display = "flex";
-    document.getElementById("loginPassword").value = "";
-    document.getElementById("loginMsg").textContent = "";
-  });
-}
-  
-  
   const MQTT_HOST = "broker.emqx.io";
   const MQTT_PORT = 8084;
   const CLIENT_ID = "WebClient_" + Math.random().toString(16).substr(2, 8);
@@ -822,6 +525,9 @@ if(logoutBtn){
       document.getElementById("v-relay").innerText = relay === 1 ? "ON" : "OFF";
       document.getElementById("v-unlocked").innerText = unlocked === 1 ? "已解鎖" : "未解鎖";
       document.getElementById("v-intrude").innerText = intrude === 1 ? "警報" : "正常";
+
+      document.getElementById("v-husky").innerText = data.husky || "--";
+      document.getElementById("v-gesture").innerText = data.gesture || "--";
 
       document.getElementById("gas-alert").classList.toggle(
         "show",
