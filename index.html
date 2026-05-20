@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>智慧居家安全控制</title>
+  <title>智慧居家控制</title>
 
   <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
@@ -187,6 +187,37 @@
       font-size: 20px;
     }
 
+    /* 新增：閾值輸入框樣式 */
+    .threshold-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 12px;
+    }
+    .threshold-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #0f172a;
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid #334155;
+    }
+    .threshold-item label {
+      font-size: 14px;
+      color: #cbd5e1;
+    }
+    .threshold-item input {
+      width: 80px;
+      background: #1e293b;
+      border: 1px solid #475569;
+      color: white;
+      padding: 6px;
+      border-radius: 6px;
+      text-align: center;
+      font-weight: bold;
+    }
+
     button {
       padding: 12px 18px;
       margin: 6px 6px 6px 0;
@@ -239,7 +270,7 @@
       font-size: 14px;
     }
 
-    /* ===== 美化後的極客風 Glassmorphism 登入介面 ===== */
+    /* ===== Glassmorphism 登入介面 ===== */
     #loginScreen{
       position: fixed;
       inset: 0;
@@ -255,7 +286,6 @@
       padding: 20px;
     }
 
-    /* 科技網格背景特效 */
     #loginScreen::before {
       content: "";
       position: absolute;
@@ -323,7 +353,6 @@
       margin-bottom: 30px;
     }
 
-    /* 移除原本的文字點，改成動態防護面板視覺 */
     .hud-panel {
       background: rgba(2, 6, 23, 0.4);
       border: 1px solid rgba(255, 255, 255, 0.05);
@@ -430,7 +459,7 @@
       padding: 12px 14px;
       border-radius: 12px;
       border: 1px solid rgba(255, 255, 255, 0.1);
-      background: rgba(5, 10, 25, 0.85); /* 稍微調深防止眩光，增加對比度 */
+      background: rgba(5, 10, 25, 0.85);
       color: white;
       outline: none;
       font-size: 14px;
@@ -510,31 +539,28 @@
 
 <div id="loginScreen">
   <div class="login-shell">
-
     <aside class="glass-sidebar">
       <div>
         <div class="glass-logo">🏠</div>
         <h2>AIOT 智慧居家<br>安全控制系統</h2>
-        <p>即時環境數據監控、遠端節能控制與多重AI人臉/手勢辨識系統。</p>
+        <p>即時環境數據監控、遠端節能控制與多重 AI 生物辨識防盜系統。</p>
       </div>
-
-      <!-- 美化後移除純文字條，改為 HUD 風格 -->
       <div class="hud-panel">
         <div class="hud-circle"></div>
         <div class="hud-info">
           <div class="hud-status">SYSTEM READY</div>
-          <div class="hud-text">連線就緒</div>
+          <div class="hud-text">安全雲端網路連線就緒</div>
         </div>
       </div>
     </aside>
 
     <div class="login-card">
-      <h2>智慧居家安全控制</h2>
-      <div class="login-subtitle">登入/註冊介面</div>
+      <h2>身分安全驗證</h2>
+      <div class="login-subtitle">AUTHENTICATION</div>
 
       <div class="tab-row">
         <button id="showLoginTab" class="tab-btn active" type="button">系統登入</button>
-        <button id="showRegisterTab" class="tab-btn" type="button">註冊</button>
+        <button id="showRegisterTab" class="tab-btn" type="button">新機註冊</button>
       </div>
 
       <div id="loginPanel" class="auth-panel active">
@@ -560,12 +586,11 @@
         <label>新建立密碼</label>
         <input id="registerPassword" type="password" placeholder="至少 6 個字元">
 
-        <label>金鑰</label>
-        <input id="registerCode" type="password" placeholder="請輸入金鑰">
+        <label>系統終端金鑰</label>
+        <input id="registerCode" type="password" placeholder="請輸入主機專屬金鑰">
 
-        <button id="registerBtn" type="button">建立帳號</button>
+        <button id="registerBtn" type="button">建立主機帳號</button>
         <div id="registerMsg" class="msg"></div>
-
         <div class="login-hint">預設金鑰：123456</div>
       </div>
     </div>
@@ -576,19 +601,17 @@
 
   <div class="header">
     <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
-      <h1>智慧居家安全控制</h1>
+      <h1>智慧居家控制</h1>
       <button id="logoutBtn" class="btn-red" type="button">登出</button>
     </div>
 
-    <div class="subtitle">智慧環境監測、遠端控制、人臉追蹤、手勢控制與安全警報系統</div>
+    <div class="subtitle">AIOT 智慧環境監測、遠端控制、人臉追蹤、手勢控制與安全警報系統</div>
 
     <div class="top-status">
       <div id="mqtt-status" class="status-pill disconnected">MQTT：連線中...</div>
-
       <div id="mode-status" class="mode-banner mode-auto">
         系統模式：<span id="txt-mode">連線中...</span>
       </div>
-
       <div class="status-pill">
         數據最後更新：<span id="last-update">--</span>
       </div>
@@ -597,7 +620,6 @@
     <div id="gas-alert" class="alert">
       🚨 瓦斯濃度超標！系統已啟動安全警報
     </div>
-
     <div id="security-alert" class="alert">
       🚨 深夜防盜警報！偵測到未註冊人臉
     </div>
@@ -606,7 +628,6 @@
   <div class="section-title">環境監測資料</div>
 
   <div class="rooms">
-
     <div class="room-card">
       <div class="room-title">房間 1</div>
       <div class="sensor-grid">
@@ -615,13 +636,11 @@
           <div id="v-t1" class="sensor-value">--.-</div>
           <div class="sensor-unit">°C</div>
         </div>
-
         <div class="sensor-box">
           <div class="sensor-label">💧 濕度</div>
           <div id="v-h1" class="sensor-value">--.-</div>
           <div class="sensor-unit">%</div>
         </div>
-
         <div class="sensor-box">
           <div class="sensor-label">⚠️ 瓦斯</div>
           <div id="v-g1" class="sensor-value">----</div>
@@ -638,13 +657,11 @@
           <div id="v-t2" class="sensor-value">--.-</div>
           <div class="sensor-unit">°C</div>
         </div>
-
         <div class="sensor-box">
           <div class="sensor-label">💧 濕度</div>
           <div id="v-h2" class="sensor-value">--.-</div>
           <div class="sensor-unit">%</div>
         </div>
-
         <div class="sensor-box">
           <div class="sensor-label">⚠️ 瓦斯</div>
           <div id="v-g2" class="sensor-value">----</div>
@@ -652,7 +669,6 @@
         </div>
       </div>
     </div>
-
   </div>
 
   <div class="section-title">系統狀態</div>
@@ -662,31 +678,46 @@
       <div class="state-title">🔐 人臉登入狀態</div>
       <div id="v-unlocked" class="state-value">--</div>
     </div>
-
     <div class="state-card">
       <div class="state-title">🌬️ Relay 排風扇</div>
       <div id="v-relay" class="state-value">--</div>
     </div>
-
     <div class="state-card">
       <div class="state-title">👮 防盜狀態</div>
       <div id="v-intrude" class="state-value">--</div>
     </div>
-
     <div class="state-card">
       <div class="state-title">📷 HuskyLens 模式</div>
       <div id="v-husky" class="state-value">--</div>
     </div>
-
     <div class="state-card">
       <div class="state-title">✋ 最近手勢</div>
       <div id="v-gesture" class="state-value">--</div>
     </div>
   </div>
 
-  <div class="section-title">遠端控制</div>
+  <div class="section-title">遠端控制與安全自訂</div>
 
   <div class="controls">
+    <!-- 新增：安全閾值預設值自訂面板 -->
+    <div class="control-card">
+      <h3>⚠️ 警報閾值設定</h3>
+      <div class="threshold-group">
+        <div class="threshold-item">
+          <label>溫度上限 (°C)</label>
+          <input type="number" id="limit-temp" value="35.0" step="0.5">
+        </div>
+        <div class="threshold-item">
+          <label>濕度上限 (%)</label>
+          <input type="number" id="limit-humi" value="80.0" step="1">
+        </div>
+        <div class="threshold-item">
+          <label>瓦斯警報值 (ppm)</label>
+          <input type="number" id="limit-gas" value="1000" step="50">
+        </div>
+      </div>
+      <button class="btn-orange" style="width:100%; margin:4px 0 0 0;" onclick="syncThresholdsToESP()">同步設定至終端</button>
+    </div>
 
     <div class="control-card">
       <h3>系統模式切換</h3>
@@ -722,7 +753,6 @@
       <button class="btn-purple" onclick="sendMQTT('smarthome/stepper/cmd', 'CENTER')"> 置中</button>
       <button class="btn-purple" onclick="sendMQTT('smarthome/stepper/cmd', 'RIGHT')">➡️ 右轉</button>
     </div>
-
   </div>
 
   <div class="log" id="log">系統訊息...</div>
@@ -774,10 +804,19 @@ document.addEventListener("DOMContentLoaded", () => {
   function unlockApp(){
     document.getElementById("loginScreen").style.display = "none";
     document.getElementById("app").style.display = "block";
+    // 登入成功後，從 LocalStorage 回填上次設定的閾值
+    loadThresholds();
   }
 
   if(localStorage.getItem("isLoggedIn") === "true"){
     unlockApp();
+  }
+
+  // 讀取本地快取的閾值設定
+  function loadThresholds() {
+    if(localStorage.getItem("limitTemp")) document.getElementById("limit-temp").value = localStorage.getItem("limitTemp");
+    if(localStorage.getItem("limitHumi")) document.getElementById("limit-humi").value = localStorage.getItem("limitHumi");
+    if(localStorage.getItem("limitGas")) document.getElementById("limit-gas").value = localStorage.getItem("limitGas");
   }
 
   loginBtn.addEventListener("click", async () => {
@@ -808,12 +847,10 @@ document.addEventListener("DOMContentLoaded", () => {
           localStorage.setItem("isLoggedIn", "true");
           localStorage.setItem("loginUser", user);
         }
-
         unlockApp();
       }else{
         msg.textContent = "密碼錯誤";
       }
-
     }catch(error){
       console.log(error);
       msg.textContent = "雲端登入失敗";
@@ -833,12 +870,10 @@ document.addEventListener("DOMContentLoaded", () => {
       msg.textContent = "金鑰錯誤";
       return;
     }
-
     if(user.length < 3){
       msg.textContent = "帳號至少需要 3 個字元";
       return;
     }
-
     if(pass.length < 6){
       msg.textContent = "密碼至少需要 6 個字元";
       return;
@@ -846,7 +881,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     try{
       const snapshot = await db.ref("users/" + user).once("value");
-
       if(snapshot.exists()){
         msg.textContent = "帳號已存在";
         return;
@@ -864,9 +898,7 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("registerUsername").value = "";
       document.getElementById("registerPassword").value = "";
       document.getElementById("registerCode").value = "";
-
       showLoginTab.click();
-
     }catch(error){
       console.log(error);
       msg.textContent = "雲端註冊失敗";
@@ -893,23 +925,17 @@ const MQTT_PORT = 8084;
 const CLIENT_ID = "WebClient_" + Math.random().toString(16).substr(2, 8);
 
 const client = new Paho.MQTT.Client(MQTT_HOST, MQTT_PORT, CLIENT_ID);
-
 const TOPIC_STATUS_REPORT = "smarthome/status/report";
 
 function log(msg) {
   const logBox = document.getElementById("log");
   const time = new Date().toLocaleTimeString();
-
-  logBox.innerHTML =
-    `[${time}] ${msg}<br>` +
-    logBox.innerHTML;
+  logBox.innerHTML = `[${time}] ${msg}<br>` + logBox.innerHTML;
 }
 
 function setMqttStatus(isConnected, text) {
   const status = document.getElementById("mqtt-status");
-
   status.innerText = text;
-
   if (isConnected) {
     status.classList.remove("disconnected");
     status.classList.add("connected");
@@ -921,11 +947,9 @@ function setMqttStatus(isConnected, text) {
 
 client.onConnectionLost = function(responseObject) {
   setMqttStatus(false, "MQTT：連線中斷，重新連線中...");
-
   if (responseObject.errorMessage) {
     log("MQTT 連線中斷：" + responseObject.errorMessage);
   }
-
   setTimeout(connectMQTT, 5000);
 };
 
@@ -945,6 +969,11 @@ client.onMessageArrived = function(message) {
     const unlocked = Number(data.unlocked || 0);
     const intrude = Number(data.intrude || 0);
 
+    // 取得網頁當前自訂的閾值數字（防呆處理：若沒輸入則抓欄位預設值）
+    const cfgTemp = Number(document.getElementById("limit-temp").value) || 35.0;
+    const cfgHumi = Number(document.getElementById("limit-humi").value) || 80.0;
+    const cfgGas  = Number(document.getElementById("limit-gas").value) || 1000;
+
     document.getElementById("v-t1").innerText = t1.toFixed(1);
     document.getElementById("v-h1").innerText = h1.toFixed(1);
     document.getElementById("v-g1").innerText = g1;
@@ -960,9 +989,10 @@ client.onMessageArrived = function(message) {
     document.getElementById("v-husky").innerText = data.husky || "--";
     document.getElementById("v-gesture").innerText = data.gesture || "--";
 
+    // 這裡改為比對「使用者輸入的瓦斯閾值」
     document.getElementById("gas-alert").classList.toggle(
       "show",
-      g1 >= 1000 || g2 >= 1000
+      g1 >= cfgGas || g2 >= cfgGas
     );
 
     document.getElementById("security-alert").classList.toggle(
@@ -972,27 +1002,22 @@ client.onMessageArrived = function(message) {
 
     const modeBanner = document.getElementById("mode-status");
     const modeText = document.getElementById("txt-mode");
-
     modeBanner.className = "mode-banner";
 
     if (data.mode === "AUTO") {
       modeBanner.classList.add("mode-auto");
       modeText.innerText = "☀️ 自動溫控追蹤中";
-    }
-    else if (data.mode === "MANUAL") {
+    } else if (data.mode === "MANUAL") {
       modeBanner.classList.add("mode-manual");
       modeText.innerText = "🎛️ 手動控制開放中";
-    }
-    else if (data.mode === "SECURITY") {
+    } else if (data.mode === "SECURITY") {
       modeBanner.classList.add("mode-security");
       modeText.innerText = "👮 深夜防盜保全中";
-    }
-    else {
+    } else {
       modeText.innerText = "未知模式";
     }
 
-    document.getElementById("last-update").innerText =
-      new Date().toLocaleTimeString();
+    document.getElementById("last-update").innerText = new Date().toLocaleTimeString();
 
   } catch (e) {
     console.log("解析 JSON 錯誤: " + e);
@@ -1002,23 +1027,18 @@ client.onMessageArrived = function(message) {
 
 function connectMQTT() {
   setMqttStatus(false, "MQTT：連線中...");
-
   client.connect({
     onSuccess: function() {
       setMqttStatus(true, "MQTT：已連線 EMQX");
       log("網頁已成功連線 EMQX MQTT 伺服器");
-
       client.subscribe(TOPIC_STATUS_REPORT);
       log("已訂閱：" + TOPIC_STATUS_REPORT);
     },
-
     onFailure: function(error) {
       setMqttStatus(false, "MQTT：連線失敗，5秒後重試");
       log("MQTT 連線失敗：" + error.errorMessage);
-
       setTimeout(connectMQTT, 5000);
     },
-
     useSSL: true,
     timeout: 8,
     keepAliveInterval: 30,
@@ -1031,15 +1051,34 @@ function sendMQTT(topic, payload) {
     alert("MQTT 尚未連線，請稍後再試");
     return;
   }
-
   const message = new Paho.MQTT.Message(payload);
   message.destinationName = topic;
   message.qos = 1;
   message.retained = false;
-
   client.send(message);
-
   log("已發射控制指令 → " + topic + " : " + payload);
+}
+
+// 新增：按下「同步設定」按鈕後，儲存本地並把設定值打包成 JSON 透過 MQTT 發給 ESP
+function syncThresholdsToESP() {
+  const tLimit = document.getElementById("limit-temp").value;
+  const hLimit = document.getElementById("limit-humi").value;
+  const gLimit = document.getElementById("limit-gas").value;
+
+  // 存到瀏覽器，下次重新整理或登入不用重新輸入
+  localStorage.setItem("limitTemp", tLimit);
+  localStorage.setItem("limitHumi", hLimit);
+  localStorage.setItem("limitGas", gLimit);
+
+  // 打包成 JSON 格式發送
+  const configPayload = JSON.stringify({
+    temp_max: Number(tLimit),
+    humi_max: Number(hLimit),
+    gas_max: Number(gLimit)
+  });
+
+  sendMQTT("smarthome/config/cmd", configPayload);
+  alert("設定已同步儲存，並已發送至終端主機！");
 }
 
 connectMQTT();
