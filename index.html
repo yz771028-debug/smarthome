@@ -1078,7 +1078,7 @@ function syncThresholdsToESP() {
   });
 
   sendMQTT("smarthome/config/cmd", configPayload);
-  alert("設定已同步儲存，並已發送至終端主機！");
+  alert("設定已儲存，並已發送至雲端！");
 }
 
 connectMQTT();
