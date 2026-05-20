@@ -546,21 +546,34 @@ let isGasInitialized = false;
       document.getElementById("v-husky").innerText = data.husky || "--";
       document.getElementById("v-gesture").innerText = data.gesture || "--";
 
-      if (data.th_t !== undefined) {
-        document.getElementById("now-th-t").innerText = data.th_t;
-        document.getElementById("set-temp").value = data.th_t;
-      }
+      // === 將舊的 th_t, th_h, th_g 判斷，整段替換成以下內容 ===
+if (data.th_t !== undefined) {
+  const currentThT = Number(data.th_t);
+  document.getElementById("now-th-t").innerText = currentThT;
+  // 只有第一次收到硬體資料才幫輸入框填值，之後放手讓使用者自己點擊調整
+  if (!isTempInitialized) {
+    document.getElementById("set-temp").value = currentThT;
+    isTempInitialized = true; 
+  }
+}
 
-      if (data.th_h !== undefined) {
-        document.getElementById("now-th-h").innerText = data.th_h;
-        document.getElementById("set-hum").value = data.th_h;
-      }
+if (data.th_h !== undefined) {
+  const currentThH = Number(data.th_h);
+  document.getElementById("now-th-h").innerText = currentThH;
+  if (!isHumInitialized) {
+    document.getElementById("set-hum").value = currentThH;
+    isHumInitialized = true;
+  }
+}
 
-      if (data.th_g !== undefined) {
-        document.getElementById("now-th-g").innerText = data.th_g;
-        document.getElementById("set-gas").value = data.th_g;
-      }
-
+if (data.th_g !== undefined) {
+  const currentThG = Number(data.th_g);
+  document.getElementById("now-th-g").innerText = currentThG;
+  if (!isGasInitialized) {
+    document.getElementById("set-gas").value = currentThG;
+    isGasInitialized = true;
+  }
+}
       const thGas = Number(data.th_g || 1000);
 
       document.getElementById("gas-alert").classList.toggle(
