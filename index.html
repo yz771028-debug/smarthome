@@ -3,24 +3,138 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>智慧居家控制</title>
+  <title>智慧居家安全控制中心</title>
 
+ 
+
+  <!-- MQTT 函式庫 -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 
   <style>
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
       font-family: Arial, "Microsoft JhengHei", sans-serif;
       background: #0f172a;
       color: #ffffff;
+      overflow-x: hidden;
     }
 
-    #app { display:none; }
+    /* === 登入/註冊 專屬樣式 === */
+    .auth-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at center, #1e293b 0%, #0f172a 100%);
+      z-index: 10000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      transition: opacity 0.5s ease, visibility 0.5s;
+    }
 
+    .auth-overlay.hidden {
+      opacity: 0;
+      visibility: hidden;
+    }
+
+    .auth-card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 40px;
+      border-radius: 24px;
+      width: 100%;
+      max-width: 400px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+      text-align: center;
+    }
+
+    .auth-card h2 {
+      margin: 0 0 10px 0;
+      font-size: 28px;
+      color: #3b82f6;
+      letter-spacing: 1px;
+    }
+
+    .auth-card p {
+      color: #94a3b8;
+      font-size: 14px;
+      margin-bottom: 24px;
+    }
+
+    .auth-group {
+      margin-bottom: 16px;
+      text-align: left;
+    }
+
+    .auth-group label {
+      display: block;
+      margin-bottom: 6px;
+      color: #cbd5e1;
+      font-size: 14px;
+    }
+
+    .auth-input {
+      width: 100%;
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: white;
+      font-size: 16px;
+      transition: border-color 0.2s;
+    }
+
+    .auth-input:focus {
+      outline: none;
+      border-color: #3b82f6;
+    }
+
+    .auth-btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      color: white;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: transform 0.1s, opacity 0.2s;
+    }
+
+    .auth-btn:hover {
+      opacity: 0.9;
+    }
+
+    .auth-btn:active {
+      transform: scale(0.98);
+    }
+
+    .auth-switch {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #94a3b8;
+    }
+
+    .auth-switch span {
+      color: #3b82f6;
+      cursor: pointer;
+      font-weight: bold;
+      text-decoration: underline;
+    }
+
+    /* === 主控制面板外框 === */
     .wrap {
       max-width: 1200px;
       margin: auto;
@@ -65,8 +179,17 @@
       color: #e2e8f0;
     }
 
-    .connected { background: #065f46; color: #d1fae5; border-color: #10b981; }
-    .disconnected { background: #7f1d1d; color: #fecaca; border-color: #ef4444; }
+    .connected {
+      background: #065f46;
+      color: #d1fae5;
+      border-color: #10b981;
+    }
+
+    .disconnected {
+      background: #7f1d1d;
+      color: #fecaca;
+      border-color: #ef4444;
+    }
 
     .mode-banner {
       padding: 10px 18px;
@@ -77,8 +200,17 @@
       color: #e2e8f0;
     }
 
-    .mode-auto { background: #064e3b; color: #d1fae5; border-color: #10b981; }
-    .mode-manual { background: #1e3a8a; color: #dbeafe; border-color: #3b82f6; }
+    .mode-auto {
+      background: #064e3b;
+      color: #d1fae5;
+      border-color: #10b981;
+    }
+
+    .mode-manual {
+      background: #1e3a8a;
+      color: #dbeafe;
+      border-color: #3b82f6;
+    }
 
     .mode-security {
       background: #7f1d1d;
@@ -187,34 +319,21 @@
       font-size: 20px;
     }
 
-    .threshold-group {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
-    .threshold-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #0f172a;
-      padding: 8px 12px;
-      border-radius: 10px;
-      border: 1px solid #334155;
-    }
-    .threshold-item label {
-      font-size: 14px;
+    label {
       color: #cbd5e1;
-    }
-    .threshold-item input {
-      width: 80px;
-      background: #1e293b;
-      border: 1px solid #475569;
-      color: white;
-      padding: 6px;
-      border-radius: 6px;
-      text-align: center;
+      font-size: 14px;
       font-weight: bold;
+    }
+
+    input[type="number"] {
+      width: 120px;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid #475569;
+      background: #0f172a;
+      color: white;
+      margin: 8px 6px 8px 0;
+      font-size: 16px;
     }
 
     button {
@@ -235,7 +354,9 @@
       box-shadow: 0 6px 18px rgba(0,0,0,0.25);
     }
 
-    button:active { transform: scale(0.96); }
+    button:active {
+      transform: scale(0.96);
+    }
 
     .btn-blue { background: #2563eb; }
     .btn-green { background: #16a34a; }
@@ -255,7 +376,9 @@
       animation: blink 1s infinite alternate;
     }
 
-    .alert.show { display: block; }
+    .alert.show {
+      display: block;
+    }
 
     .log {
       margin-top: 20px;
@@ -269,362 +392,99 @@
       font-size: 14px;
     }
 
-    /* ===== Glassmorphism 登入介面優化與防禦錯誤樣式 ===== */
-    #loginScreen {
+    /* 常駐右下角 GIF 樣式 */
+    .floating-gif {
       position: fixed;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: 
-        radial-gradient(circle at 15% 15%, rgba(37, 99, 235, 0.25), transparent 45%),
-        radial-gradient(circle at 85% 85%, rgba(124, 58, 237, 0.25), transparent 45%),
-        linear-gradient(135deg, #020617, #0b1329, #111c44);
-      background-size: cover;
+      bottom: 20px;
+      right: 20px;
+      width: 80px;
+      height: auto;
       z-index: 9999;
-      padding: 20px;
-    }
-
-    #loginScreen::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background-image: linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-                        linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
-      background-size: 30px 30px;
       pointer-events: none;
-    }
-
-    .login-shell {
-      width: min(920px, 96vw);
-      min-height: 560px;
-      display: grid;
-      grid-template-columns: 1fr 1.1fr;
-      border-radius: 28px;
-      overflow: hidden;
-      background: rgba(10, 17, 39, 0.6);
-      backdrop-filter: blur(25px);
-      -webkit-backdrop-filter: blur(25px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 40px 100px rgba(0, 0, 0, 0.65), 
-                  inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    }
-
-    .glass-sidebar {
-      padding: 45px 38px;
-      background: linear-gradient(160deg, rgba(29, 78, 216, 0.25), rgba(15, 23, 42, 0.4));
-      border-right: 1px solid rgba(255, 255, 255, 0.08);
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      position: relative;
-    }
-
-    .glass-logo {
-      width: 68px;
-      height: 68px;
-      border-radius: 22px;
-      background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(37, 99, 235, 0.1));
-      border: 1px solid rgba(56, 189, 248, 0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 32px;
-      box-shadow: 0 8px 20px rgba(37, 99, 235, 0.2);
-      margin-bottom: 24px;
-    }
-
-    .glass-sidebar h2 {
-      font-size: 30px;
-      font-weight: 700;
-      margin: 0 0 14px;
-      line-height: 1.3;
-      background: linear-gradient(135deg, #ffffff, #93c5fd);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      letter-spacing: 1px;
-    }
-
-    .glass-sidebar p {
-      color: #94a3b8;
-      line-height: 1.6;
-      font-size: 15px;
-      margin-bottom: 30px;
-    }
-
-    .hud-panel {
-      background: rgba(2, 6, 23, 0.4);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      border-radius: 20px;
-      padding: 20px;
-      margin-top: auto;
-      display: flex;
-      align-items: center;
-      gap: 16px;
-    }
-
-    .hud-circle {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      border: 3px solid rgba(16, 185, 129, 0.2);
-      border-top-color: #10b981;
-      animation: spin 2s linear infinite;
-    }
-
-    @keyframes spin {
-      to { transform: rotate(360deg); }
-    }
-
-    .hud-info {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .hud-status {
-      font-size: 14px;
-      font-weight: bold;
-      color: #10b981;
-    }
-
-    .hud-text {
-      font-size: 12px;
-      color: #64748b;
-    }
-
-    .login-card {
-      padding: 45px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      background: rgba(2, 6, 23, 0.25);
-    }
-
-    .login-card h2 {
-      margin: 0 0 6px;
-      font-size: 26px;
-      letter-spacing: 1px;
-      text-align: center;
-      background: #ffffff;
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .login-subtitle {
-      text-align: center;
-      color: #64748b;
-      font-size: 14px;
-      margin-bottom: 24px;
-    }
-
-    .tab-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-bottom: 24px;
-      background: rgba(15, 23, 42, 0.8);
-      padding: 5px;
-      border-radius: 14px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-    }
-
-    .tab-btn {
-      margin: 0;
-      border-radius: 10px;
-      background: transparent;
-      color: #94a3b8;
-      padding: 10px;
-      font-size: 14px;
-      font-weight: bold;
-    }
-
-    .tab-btn.active {
-      background: linear-gradient(135deg, #2563eb, #1d4ed8);
-      color: white;
-      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
-    }
-
-    .auth-panel { display: none; }
-    .auth-panel.active { display: block; }
-
-    .login-card label {
-      display: block;
-      margin: 14px 0 6px;
-      color: #94a3b8;
-      font-size: 13px;
-      font-weight: 500;
-    }
-
-    .login-card input[type="text"],
-    .login-card input[type="password"] {
-      width: 100%;
-      padding: 12px 14px;
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      background: rgba(5, 10, 25, 0.85);
-      color: white;
-      outline: none;
-      font-size: 14px;
-      transition: all 0.2s;
-    }
-
-    .login-card input:focus {
-      border-color: #3b82f6;
-      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
-      background: rgba(5, 10, 25, 0.95);
-    }
-
-    .remember-row {
-      display: flex !important;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      margin: 18px 0 !important;
-      color: #94a3b8;
-      font-size: 13px;
-      cursor: pointer;
-      user-select: none;
-    }
-
-    .remember-row input {
-      width: auto !important;
-      margin: 0 !important;
-      cursor: pointer;
-    }
-
-    #loginBtn, #registerBtn {
-      width: 100%;
-      padding: 13px;
-      border-radius: 12px;
-      font-size: 16px;
-      margin-top: 10px;
-      box-shadow: 0 4px 15px rgba(37, 99, 235, 0.2);
-    }
-
-    #loginBtn {
-      background: linear-gradient(135deg, #2563eb, #3b82f6);
-    }
-
-    #registerBtn {
-      background: linear-gradient(135deg, #10b981, #059669);
-      box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
-    }
-
-    .msg {
-      min-height: 22px;
-      text-align: center;
-      margin-top: 12px;
-      font-size: 13px;
-      font-weight: bold;
-    }
-
-    .login-hint {
-      color: #475569;
-      text-align: center;
-      font-size: 12px;
-      margin-top: 14px;
-      letter-spacing: 1px;
-    }
-
-    @media (max-width: 820px) {
-      .login-shell { grid-template-columns: 1fr; max-width: 480px; }
-      .glass-sidebar { display: none; }
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.5));
     }
 
     @media (max-width: 600px) {
       h1 { font-size: 28px; }
       .sensor-grid { grid-template-columns: 1fr; }
       button { width: 100%; }
+      input[type="number"] { width: 100%; }
+      .floating-gif { width: 55px; bottom: 12px; right: 12px; }
     }
   </style>
 </head>
-
 <body>
 
-<div id="loginScreen">
-  <div class="login-shell">
-    <aside class="glass-sidebar">
-      <div>
-        <div class="glass-logo">🏠</div>
-        <h2>AIOT 智慧居家<br>安全控制系統</h2>
-        <p>即時環境數據監控、遠端節能控制與多重 AI 生物辨識防盜系統。</p>
-      </div>
-      <div class="hud-panel">
-        <div class="hud-circle"></div>
-        <div class="hud-info">
-          <div class="hud-status">SYSTEM READY</div>
-          <div class="hud-text">安全雲端網路連線就緒</div>
-        </div>
-      </div>
-    </aside>
+<!-- === 登入/註冊 介面遮罩 === -->
+<div class="auth-overlay" id="auth-overlay">
+  <!-- 登入卡片 -->
+  <div class="auth-card" id="login-card">
+    <h2>安全控制中心</h2>
+    <p>請輸入管理者帳號密碼以解鎖控制面板</p>
+    
+    <div class="auth-group">
+      <label>管理員帳號</label>
+      <input type="text" id="login-user" class="auth-input" placeholder="請輸入帳號">
+    </div>
+    <div class="auth-group">
+      <label>密碼</label>
+      <input type="password" id="login-pass" class="auth-input" placeholder="請輸入密碼">
+    </div>
+    <button class="auth-btn" onclick="handleLogin()">登入系統</button>
+    
+    <div class="auth-switch">
+      沒有帳號？ <span onclick="switchAuth( 'register' )">立即註冊</span>
+    </div>
+  </div>
 
-    <div class="login-card">
-      <h2>身分安全驗證</h2>
-      <div class="login-subtitle">AUTHENTICATION</div>
-
-      <div class="tab-row">
-        <button id="showLoginTab" class="tab-btn active" type="button">系統登入</button>
-        <button id="showRegisterTab" class="tab-btn" type="button">新機註冊</button>
-      </div>
-
-      <div id="loginPanel" class="auth-panel active">
-        <label>管理者帳號</label>
-        <input id="loginUsername" type="text" placeholder="請輸入帳號">
-
-        <label>安全存取密碼</label>
-        <input id="loginPassword" type="password" placeholder="請輸入密碼">
-
-        <label class="remember-row">
-          <input id="rememberLogin" type="checkbox">
-          保持登入狀態
-        </label>
-
-        <button id="loginBtn" type="button">安全登入</button>
-        <div id="loginMsg" class="msg"></div>
-      </div>
-
-      <div id="registerPanel" class="auth-panel">
-        <label>新建立帳號</label>
-        <input id="registerUsername" type="text" placeholder="至少 3 個字元">
-
-        <label>新建立密碼</label>
-        <input id="registerPassword" type="password" placeholder="至少 6 個字元">
-
-        <label>系統終端金鑰</label>
-        <input id="registerCode" type="password" placeholder="請輸入主機專屬金鑰">
-
-        <button id="registerBtn" type="button">建立主機帳號</button>
-        <div id="registerMsg" class="msg"></div>
-        <div class="login-hint">預設金鑰：123456</div>
-      </div>
+  <!-- 註冊卡片 (預設隱藏) -->
+  <div class="auth-card" id="register-card" style="display: none;">
+    <h2>註冊管理者</h2>
+    <p>創建一組新的本地管理端帳號</p>
+    
+    <div class="auth-group">
+      <label>新設定帳號</label>
+      <input type="text" id="reg-user" class="auth-input" placeholder="字母或數字">
+    </div>
+    <div class="auth-group">
+      <label>密碼</label>
+      <input type="password" id="reg-pass" class="auth-input" placeholder="請設定密碼">
+    </div>
+    <div class="auth-group">
+      <label>確認密碼</label>
+      <input type="password" id="reg-confirm" class="auth-input" placeholder="再次輸入密碼">
+    </div>
+    <button class="auth-btn" onclick="handleRegister()">完成註冊</button>
+    
+    <div class="auth-switch">
+      已有帳號？ <span onclick="switchAuth( 'login' )">返回登入</span>
     </div>
   </div>
 </div>
 
-<div id="app" class="wrap">
+<!-- === 主要後台控制面板 === -->
+<div class="wrap">
 
   <div class="header">
-    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
-      <h1>智慧居家控制</h1>
-      <button id="logoutBtn" class="btn-red" type="button">登出</button>
-    </div>
-
+    <h1>智慧居家安全控制</h1>
     <div class="subtitle">AIOT 智慧環境監測、遠端控制、人臉追蹤、手勢控制與安全警報系統</div>
 
     <div class="top-status">
       <div id="mqtt-status" class="status-pill disconnected">MQTT：連線中...</div>
+
       <div id="mode-status" class="mode-banner mode-auto">
         系統模式：<span id="txt-mode">連線中...</span>
       </div>
+
       <div class="status-pill">
-        數據最後更新：<span id="last-update">--</span>
+        最後更新：<span id="last-update">--</span>
       </div>
     </div>
 
     <div id="gas-alert" class="alert">
       🚨 瓦斯濃度超標！系統已啟動安全警報
     </div>
+
     <div id="security-alert" class="alert">
       🚨 深夜防盜警報！偵測到未註冊人臉
     </div>
@@ -701,33 +561,35 @@
     </div>
   </div>
 
-  <div class="section-title">遠端控制與安全自訂</div>
+  <div class="section-title">遠端控制</div>
 
   <div class="controls">
-    <div class="control-card">
-      <h3>⚠️ 警報閾值設定</h3>
-      <div class="threshold-group">
-        <div class="threshold-item">
-          <label>溫度上限 (°C)</label>
-          <input type="number" id="limit-temp" value="35.0" step="0.5">
-        </div>
-        <div class="threshold-item">
-          <label>濕度上限 (%)</label>
-          <input type="number" id="limit-humi" value="80.0" step="1">
-        </div>
-        <div class="threshold-item">
-          <label>瓦斯警報值 (ppm)</label>
-          <input type="number" id="limit-gas" value="1000" step="50">
-        </div>
-      </div>
-      <button class="btn-orange" style="width:100%; margin:4px 0 0 0;" onclick="syncThresholdsToESP()">同步設定至終端</button>
-    </div>
-
     <div class="control-card">
       <h3>系統模式切換</h3>
       <button class="btn-green" onclick="sendMQTT('smarthome/mode/cmd', 'AUTO')">☀️ 自動模式</button>
       <button class="btn-blue" onclick="sendMQTT('smarthome/mode/cmd', 'MANUAL')">🎛️ 手動模式</button>
       <button class="btn-red" onclick="sendMQTT('smarthome/mode/cmd', 'SECURITY')">👮 深夜防盜</button>
+    </div>
+
+    <div class="control-card">
+      <h3>自動模式門檻設定</h3>
+      <label>溫度門檻 °C</label><br>
+      <input id="set-temp" type="number" value="30" min="10" max="60" step="0.5">
+      <button class="btn-green" onclick="setThreshold('temp')">設定溫度</button>
+      <br><br>
+      <label>濕度門檻 %</label><br>
+      <input id="set-hum" type="number" value="80" min="30" max="100" step="1">
+      <button class="btn-blue" onclick="setThreshold('hum')">設定濕度</button>
+      <br><br>
+      <label>瓦斯門檻</label><br>
+      <input id="set-gas" type="number" value="1000" min="100" max="5000" step="10">
+      <button class="btn-red" onclick="setThreshold('gas')">設定瓦斯</button>
+      <p style="color:#94a3b8; font-size:14px;">
+        目前門檻：
+        溫度 <span id="now-th-t">--</span> °C /
+        濕度 <span id="now-th-h">--</span> % /
+        瓦斯 <span id="now-th-g">--</span>
+      </p>
     </div>
 
     <div class="control-card">
@@ -744,7 +606,7 @@
 
     <div class="control-card">
       <h3>紅外線風扇控制</h3>
-      <button class="btn-green" onclick="sendMQTT('smarthome/ir/cmd', 'OPEN')">開風扇</button>
+      <button class="btn-green" onclick="sendMQTT('smarthome/ir/cmd', 'OPEN')">開風扇 + 風量+</button>
       <button class="btn-red" onclick="sendMQTT('smarthome/ir/cmd', 'CLOSE')">關風扇</button>
       <button class="btn-blue" onclick="sendMQTT('smarthome/ir/cmd', 'UP')">風量+</button>
       <button class="btn-blue" onclick="sendMQTT('smarthome/ir/cmd', 'DOWN')">風量-</button>
@@ -754,7 +616,7 @@
     <div class="control-card">
       <h3>步進馬達手動控制</h3>
       <button class="btn-purple" onclick="sendMQTT('smarthome/stepper/cmd', 'LEFT')">⬅️ 左轉</button>
-      <button class="btn-purple" onclick="sendMQTT('smarthome/stepper/cmd', 'CENTER')"> 置中</button>
+      <button class="btn-purple" onclick="sendMQTT('smarthome/stepper/cmd', 'CENTER')">🎯 回中心</button>
       <button class="btn-purple" onclick="sendMQTT('smarthome/stepper/cmd', 'RIGHT')">➡️ 右轉</button>
     </div>
   </div>
@@ -763,322 +625,250 @@
 
 </div>
 
+<!-- 右下角吉祥物 GIF -->
+<img src="https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExM2g0Y2U1cGF5Ym15cnY1Mnd0b3psY3V0Z3V6cHFrZmpvYW8wZThwZiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/3orifhmN3ptpt9Zf0Y/giphy.gif" class="floating-gif" alt="Smart Home Mascot">
+
 <script>
-// ===== Firebase =====
-const firebaseConfig = {
-  apiKey: "AIzaSyBWAR545ZiCCAL49PqhbeYVl5eZ9iXnBr8",
-  authDomain: "smart-home-security-b06fe.firebaseapp.com",
-  databaseURL: "https://smart-home-security-b06fe-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "smart-home-security-b06fe",
-  storageBucket: "smart-home-security-b06fe.firebasestorage.app",
-  messagingSenderId: "592787545772",
-  appId: "1:592787545772:web:3c29eb9f326e919b04c909",
-  measurementId: "G-M29H6DB7YD"
-};
-
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-document.addEventListener("DOMContentLoaded", () => {
-  const INVITE_CODE = "123456";
-
-  const loginBtn = document.getElementById("loginBtn");
-  const registerBtn = document.getElementById("registerBtn");
-  const logoutBtn = document.getElementById("logoutBtn");
-
-  const showLoginTab = document.getElementById("showLoginTab");
-  const showRegisterTab = document.getElementById("showRegisterTab");
-  const loginPanel = document.getElementById("loginPanel");
-  const registerPanel = document.getElementById("registerPanel");
-
-  showLoginTab.addEventListener("click", () => {
-    loginPanel.classList.add("active");
-    registerPanel.classList.remove("active");
-    showLoginTab.classList.add("active");
-    showRegisterTab.classList.remove("active");
-  });
-
-  showRegisterTab.addEventListener("click", () => {
-    registerPanel.classList.add("active");
-    loginPanel.classList.remove("active");
-    showRegisterTab.classList.add("active");
-    showLoginTab.classList.remove("active");
-  });
-
-  function unlockApp(){
-    document.getElementById("loginScreen").style.display = "none";
-    document.getElementById("app").style.display = "block";
-    loadThresholds();
-  }
-
-  if(localStorage.getItem("isLoggedIn") === "true"){
-    unlockApp();
-  }
-
-  function loadThresholds() {
-    if(localStorage.getItem("limitTemp")) document.getElementById("limit-temp").value = localStorage.getItem("limitTemp");
-    if(localStorage.getItem("limitHumi")) document.getElementById("limit-humi").value = localStorage.getItem("limitHumi");
-    if(localStorage.getItem("limitGas")) document.getElementById("limit-gas").value = localStorage.getItem("limitGas");
-  }
-
-  loginBtn.addEventListener("click", async () => {
-    const user = document.getElementById("loginUsername").value.trim();
-    const pass = document.getElementById("loginPassword").value;
-    const msg = document.getElementById("loginMsg");
-
-    msg.style.color = "#fca5a5";
-    msg.textContent = "";
-
-    if(user === "" || pass === ""){
-      msg.textContent = "請輸入帳號與密碼";
-      return;
-    }
-
-    try{
-      const snapshot = await db.ref("users/" + user).once("value");
-
-      if(!snapshot.exists()){
-        msg.textContent = "帳號不存在";
-        return;
-      }
-
-      const data = snapshot.val();
-
-      if(data.password === pass){
-        if(document.getElementById("rememberLogin").checked){
-          localStorage.setItem("isLoggedIn", "true");
-          localStorage.setItem("loginUser", user);
-        }
-        unlockApp();
-      }else{
-        msg.textContent = "密碼錯誤";
-      }
-    }catch(error){
-      console.log(error);
-      msg.textContent = "雲端登入失敗";
-    }
-  });
-
-  registerBtn.addEventListener("click", async () => {
-    const user = document.getElementById("registerUsername").value.trim();
-    const pass = document.getElementById("registerPassword").value;
-    const code = document.getElementById("registerCode").value.trim();
-    const msg = document.getElementById("registerMsg");
-
-    msg.style.color = "#fca5a5";
-    msg.textContent = "";
-
-    if(code !== INVITE_CODE){
-      msg.textContent = "金鑰錯誤";
-      return;
-    }
-    if(user.length < 3){
-      msg.textContent = "帳號至少需要 3 個字元";
-      return;
-    }
-    if(pass.length < 6){
-      msg.textContent = "密碼至少需要 6 個字元";
-      return;
-    }
-
-    try{
-      const snapshot = await db.ref("users/" + user).once("value");
-      if(snapshot.exists()){
-        msg.textContent = "帳號已存在";
-        return;
-      }
-
-      await db.ref("users/" + user).set({
-        username:user,
-        password:pass,
-        createdAt:Date.now()
-      });
-
-      msg.style.color = "#86efac";
-      msg.textContent = "註冊成功 ✔ 請登入";
-
-      document.getElementById("registerUsername").value = "";
-      document.getElementById("registerPassword").value = "";
-      document.getElementById("registerCode").value = "";
-      showLoginTab.click();
-    }catch(error){
-      console.log(error);
-      msg.textContent = "雲端註冊失敗";
-    }
-  });
-
-  logoutBtn.addEventListener("click", () => {
-    const ok = confirm("確定要登出嗎？");
-    if(!ok) return;
-
-    localStorage.removeItem("isLoggedIn");
-    localStorage.removeItem("loginUser");
-
-    document.getElementById("app").style.display = "none";
-    document.getElementById("loginScreen").style.display = "flex";
-    document.getElementById("loginPassword").value = "";
-    document.getElementById("loginMsg").textContent = "";
-  });
-});
-
-// ===== MQTT =====
-const MQTT_HOST = "broker.emqx.io";
-const MQTT_PORT = 8084;
-const CLIENT_ID = "WebClient_" + Math.random().toString(16).substr(2, 8);
-
-const client = new Paho.MQTT.Client(MQTT_HOST, MQTT_PORT, CLIENT_ID);
-const TOPIC_STATUS_REPORT = "smarthome/status/report";
-
-function log(msg) {
-  const logBox = document.getElementById("log");
-  const time = new Date().toLocaleTimeString();
-  logBox.innerHTML = `[${time}] ${msg}<br>` + logBox.innerHTML;
-}
-
-function setMqttStatus(isConnected, text) {
-  const status = document.getElementById("mqtt-status");
-  status.innerText = text;
-  if (isConnected) {
-    status.classList.remove("disconnected");
-    status.classList.add("connected");
-  } else {
-    status.classList.remove("connected");
-    status.classList.add("disconnected");
-  }
-}
-
-client.onConnectionLost = function(responseObject) {
-  setMqttStatus(false, "MQTT：連線中斷，重新連線中...");
-  if (responseObject.errorMessage) {
-    log("MQTT 連線中斷：" + responseObject.errorMessage);
-  }
-  setTimeout(connectMQTT, 5000);
-};
-
-client.onMessageArrived = function(message) {
-  try {
-    const data = JSON.parse(message.payloadString);
-
-    const t1 = Number(data.t1 || 0);
-    const h1 = Number(data.h1 || 0);
-    const g1 = Number(data.g1 || 0);
-
-    const t2 = Number(data.t2 || 0);
-    const h2 = Number(data.h2 || 0);
-    const g2 = Number(data.g2 || 0);
-
-    const relay = Number(data.relay || 0);
-    const unlocked = Number(data.unlocked || 0);
-    const intrude = Number(data.intrude || 0);
-
-    const cfgTemp = Number(document.getElementById("limit-temp").value) || 35.0;
-    const cfgHumi = Number(document.getElementById("limit-humi").value) || 80.0;
-    const cfgGas  = Number(document.getElementById("limit-gas").value) || 1000;
-
-    document.getElementById("v-t1").innerText = t1.toFixed(1);
-    document.getElementById("v-h1").innerText = h1.toFixed(1);
-    document.getElementById("v-g1").innerText = g1;
-
-    document.getElementById("v-t2").innerText = t2.toFixed(1);
-    document.getElementById("v-h2").innerText = h2.toFixed(1);
-    document.getElementById("v-g2").innerText = g2;
-
-    document.getElementById("v-relay").innerText = relay === 1 ? "ON" : "OFF";
-    document.getElementById("v-unlocked").innerText = unlocked === 1 ? "已解鎖" : "未解鎖";
-    document.getElementById("v-intrude").innerText = intrude === 1 ? "警報" : "正常";
-
-    document.getElementById("v-husky").innerText = data.husky || "--";
-    document.getElementById("v-gesture").innerText = data.gesture || "--";
-
-    document.getElementById("gas-alert").classList.toggle(
-      "show",
-      g1 >= cfgGas || g2 >= cfgGas
-    );
-
-    document.getElementById("security-alert").classList.toggle(
-      "show",
-      intrude === 1
-    );
-
-    const modeBanner = document.getElementById("mode-status");
-    const modeText = document.getElementById("txt-mode");
-    modeBanner.className = "mode-banner";
-
-    if (data.mode === "AUTO") {
-      modeBanner.classList.add("mode-auto");
-      modeText.innerText = "☀️ 自動溫控追蹤中";
-    } else if (data.mode === "MANUAL") {
-      modeBanner.classList.add("mode-manual");
-      modeText.innerText = "🎛️ 手動控制開放中";
-    } else if (data.mode === "SECURITY") {
-      modeBanner.classList.add("mode-security");
-      modeText.innerText = "👮 深夜防盜保全中";
+  // === 登入註冊控制邏輯 (使用 localStorage 本地儲存) ===
+  function switchAuth(type) {
+    if (type === 'register') {
+      document.getElementById('login-card').style.display = 'none';
+      document.getElementById('register-card').style.display = 'block';
     } else {
-      modeText.innerText = "未知模式";
+      document.getElementById('login-card').style.display = 'block';
+      document.getElementById('register-card').style.display = 'none';
+    }
+  }
+
+  function handleRegister() {
+    const user = document.getElementById('reg-user').value.trim();
+    const pass = document.getElementById('reg-pass').value;
+    const confirm = document.getElementById('reg-confirm').value;
+
+    if (!user || !pass) {
+      alert('帳號密碼不能留空！');
+      return;
+    }
+    if (pass !== confirm) {
+      alert('兩次輸入的密碼不一致！');
+      return;
     }
 
-    document.getElementById("last-update").innerText = new Date().toLocaleTimeString();
+    // 檢查帳號是否已被註冊
+    if (localStorage.getItem('auth_' + user)) {
+      alert('此管理員帳號已存在！');
+      return;
+    }
 
-  } catch (e) {
-    console.log("解析 JSON 錯誤: " + e);
-    log("解析 JSON 錯誤，請確認 ESP 回傳格式");
+    // 儲存帳號資料
+    localStorage.setItem('auth_' + user, pass);
+    alert('管理員帳號註冊成功！將為您切換至登入頁面。');
+    switchAuth('login');
+    document.getElementById('login-user').value = user;
   }
-};
 
-function connectMQTT() {
-  setMqttStatus(false, "MQTT：連線中...");
-  client.connect({
-    onSuccess: function() {
-      setMqttStatus(true, "MQTT：已連線 EMQX");
-      log("網頁已成功連線 EMQX MQTT 伺服器");
-      client.subscribe(TOPIC_STATUS_REPORT);
-      log("已訂閱：" + TOPIC_STATUS_REPORT);
-    },
-    onFailure: function(error) {
-      setMqttStatus(false, "MQTT：連線失敗，5秒後重試");
-      log("MQTT 連線失敗：" + error.errorMessage);
-      setTimeout(connectMQTT, 5000);
-    },
-    useSSL: true,
-    timeout: 8,
-    keepAliveInterval: 30,
-    cleanSession: true
-  });
-}
+  function handleLogin() {
+    const user = document.getElementById('login-user').value.trim();
+    const pass = document.getElementById('login-pass').value;
 
-function sendMQTT(topic, payload) {
-  if (!client.isConnected()) {
-    alert("MQTT 尚未連線，請稍後再試");
-    return;
+    // 預設一組超級管理員帳密（防呆用，避免 localStorage 被清空時鎖死）
+    if (user === 'admin' && pass === '1234') {
+      unlockSystem();
+      return;
+    }
+
+    const savedPass = localStorage.getItem('auth_' + user);
+    if (savedPass && savedPass === pass) {
+      unlockSystem();
+    } else {
+      alert('管理員驗證失敗！帳號或密碼錯誤。');
+    }
   }
-  const message = new Paho.MQTT.Message(payload);
-  message.destinationName = topic;
-  message.qos = 1;
-  message.retained = false;
-  client.send(message);
-  log("已發射控制指令 → " + topic + " : " + payload);
-}
 
-function syncThresholdsToESP() {
-  const tLimit = document.getElementById("limit-temp").value;
-  const hLimit = document.getElementById("limit-humi").value;
-  const gLimit = document.getElementById("limit-gas").value;
+  function unlockSystem() {
+    document.getElementById('auth-overlay').classList.add('hidden');
+    log("管理員驗證成功，解鎖控制面板。");
+    // 驗證成功後再行啟動 MQTT 連線，節省效能
+    connectMQTT();
+  }
 
-  localStorage.setItem("limitTemp", tLimit);
-  localStorage.setItem("limitHumi", hLimit);
-  localStorage.setItem("limitGas", gLimit);
 
-  const configPayload = JSON.stringify({
-    temp_max: Number(tLimit),
-    humi_max: Number(hLimit),
-    gas_max: Number(gLimit)
-  });
+  // === 原有 MQTT 與硬體控制邏輯 ===
+  const MQTT_HOST = "broker.emqx.io";
+  const MQTT_PORT = 8084;
+  const CLIENT_ID = "WebClient_" + Math.random().toString(16).substr(2, 8);
 
-  sendMQTT("smarthome/config/cmd", configPayload);
-  alert("設定已同步儲存，並已發送至終端主機！");
-}
+  const client = new Paho.MQTT.Client(MQTT_HOST, MQTT_PORT, CLIENT_ID);
+  const TOPIC_STATUS_REPORT = "smarthome/status/report";
 
-connectMQTT();
+  let isTempInitialized = false;
+  let isHumInitialized = false;
+  let isGasInitialized = false;
+
+  function log(msg) {
+    const logBox = document.getElementById("log");
+    const time = new Date().toLocaleTimeString();
+    logBox.innerHTML = `[${time}] ${msg}<br>` + logBox.innerHTML;
+  }
+
+  function setMqttStatus(isConnected, text) {
+    const status = document.getElementById("mqtt-status");
+    status.innerText = text;
+    if (isConnected) {
+      status.classList.remove("disconnected");
+      status.classList.add("connected");
+    } else {
+      status.classList.remove("connected");
+      status.classList.add("disconnected");
+    }
+  }
+
+  client.onConnectionLost = function(responseObject) {
+    setMqttStatus(false, "MQTT：連線中斷，重新連線中...");
+    if (responseObject.errorMessage) {
+      log("MQTT 連線中斷：" + responseObject.errorMessage);
+    }
+    setTimeout(connectMQTT, 5000);
+  };
+
+  client.onMessageArrived = function(message) {
+    try {
+      const data = JSON.parse(message.payloadString);
+
+      const t1 = Number(data.t1 || 0);
+      const h1 = Number(data.h1 || 0);
+      const g1 = Number(data.g1 || 0);
+      const t2 = Number(data.t2 || 0);
+      const h2 = Number(data.h2 || 0);
+      const g2 = Number(data.g2 || 0);
+
+      const relay = Number(data.relay || 0);
+      const unlocked = Number(data.unlocked || 0);
+      const intrude = Number(data.intrude || 0);
+
+      document.getElementById("v-t1").innerText = t1.toFixed(1);
+      document.getElementById("v-h1").innerText = h1.toFixed(1);
+      document.getElementById("v-g1").innerText = g1;
+
+      document.getElementById("v-t2").innerText = t2.toFixed(1);
+      document.getElementById("v-h2").innerText = h2.toFixed(1);
+      document.getElementById("v-g2").innerText = g2;
+
+      document.getElementById("v-relay").innerText = relay === 1 ? "ON" : "OFF";
+      document.getElementById("v-unlocked").innerText = unlocked === 1 ? "已解鎖" : "未解鎖";
+      document.getElementById("v-intrude").innerText = intrude === 1 ? "警報" : "正常";
+
+      document.getElementById("v-husky").innerText = data.husky || "--";
+      document.getElementById("v-gesture").innerText = data.gesture || "--";
+
+      if (data.th_t !== undefined) {
+        const currentThT = Number(data.th_t);
+        document.getElementById("now-th-t").innerText = currentThT;
+        if (!isTempInitialized) {
+          document.getElementById("set-temp").value = currentThT;
+          isTempInitialized = true; 
+        }
+      }
+
+      if (data.th_h !== undefined) {
+        const currentThH = Number(data.th_h);
+        document.getElementById("now-th-h").innerText = currentThH;
+        if (!isHumInitialized) {
+          document.getElementById("set-hum").value = currentThH;
+          isHumInitialized = true;
+        }
+      }
+
+      if (data.th_g !== undefined) {
+        const currentThG = Number(data.th_g);
+        document.getElementById("now-th-g").innerText = currentThG;
+        if (!isGasInitialized) {
+          document.getElementById("set-gas").value = currentThG;
+          isGasInitialized = true;
+        }
+      }
+
+      const thGas = Number(data.th_g || 1000);
+      document.getElementById("gas-alert").classList.toggle("show", g1 >= thGas || g2 >= thGas);
+      document.getElementById("security-alert").classList.toggle("show", intrude === 1);
+
+      const modeBanner = document.getElementById("mode-status");
+      const modeText = document.getElementById("txt-mode");
+      modeBanner.className = "mode-banner";
+
+      if (data.mode === "AUTO") {
+        modeBanner.classList.add("mode-auto");
+        modeText.innerText = "☀️ 自動溫控追蹤中";
+      } else if (data.mode === "MANUAL") {
+        modeBanner.classList.add("mode-manual");
+        modeText.innerText = "🎛️ 手動控制開放中";
+      } else if (data.mode === "SECURITY") {
+        modeBanner.classList.add("mode-security");
+        modeText.innerText = "👮 深夜防盜保全中";
+      } else {
+        modeText.innerText = "未知模式";
+      }
+
+      document.getElementById("last-update").innerText = new Date().toLocaleTimeString();
+
+    } catch (e) {
+      console.log("解析 JSON 錯誤: " + e);
+      log("解析 JSON 錯誤，請確認 ESP 回傳格式");
+    }
+  };
+
+  function connectMQTT() {
+    // 如果遮罩還沒消失（使用者未登入），不執行連線
+    if (!document.getElementById('auth-overlay').classList.contains('hidden')) return;
+
+    setMqttStatus(false, "MQTT：連線中...");
+    client.connect({
+      onSuccess: function() {
+        setMqttStatus(true, "MQTT：已連線 EMQX");
+        log("網頁已成功連線 EMQX MQTT 伺服器");
+        client.subscribe(TOPIC_STATUS_REPORT);
+        log("已訂閱：" + TOPIC_STATUS_REPORT);
+      },
+      onFailure: function(error) {
+        setMqttStatus(false, "MQTT：連線失敗，5秒後重試");
+        log("MQTT 連線失敗：" + error.errorMessage);
+        setTimeout(connectMQTT, 5000);
+      },
+      useSSL: true,
+      timeout: 8,
+      keepAliveInterval: 30,
+      cleanSession: true
+    });
+  }
+
+  function sendMQTT(topic, payload) {
+    if (!client.isConnected()) {
+      alert("MQTT 尚未連線，請稍後再試");
+      return;
+    }
+    const message = new Paho.MQTT.Message(payload);
+    message.destinationName = topic;
+    message.qos = 1;
+    message.retained = false;
+    client.send(message);
+    log("已發射控制指令 → " + topic + " : " + payload);
+  }
+
+  function setThreshold(type) {
+    if (type === "temp") {
+      const value = document.getElementById("set-temp").value;
+      sendMQTT("smarthome/setting/temp/cmd", value);
+      log("已設定溫度門檻：" + value + " °C");
+    } else if (type === "hum") {
+      const value = document.getElementById("set-hum").value;
+      sendMQTT("smarthome/setting/hum/cmd", value);
+      log("已設定濕度門檻：" + value + " %");
+    } else if (type === "gas") {
+      const value = document.getElementById("set-gas").value;
+      sendMQTT("smarthome/setting/gas/cmd", value);
+      log("已設定瓦斯門檻：" + value);
+    }
+  }
 </script>
 
 </body>
