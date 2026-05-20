@@ -477,6 +477,13 @@
   const client = new Paho.MQTT.Client(MQTT_HOST, MQTT_PORT, CLIENT_ID);
   const TOPIC_STATUS_REPORT = "smarthome/status/report";
 
+
+
+// +++ 在下方補上這三行 (用來記錄網頁是不是第一次填入硬體給的數值) +++
+let isTempInitialized = false;
+let isHumInitialized = false;
+let isGasInitialized = false;
+
   function log(msg) {
     const logBox = document.getElementById("log");
     const time = new Date().toLocaleTimeString();
