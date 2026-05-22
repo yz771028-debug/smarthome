@@ -685,10 +685,15 @@
   return;
 }
 
-    const savedPass = localStorage.getItem('auth_' + user);
-    if (savedPass && savedPass === pass) {
-      unlockSystem();
-    } else {
+   if (savedPass && savedPass === pass) {
+  if (document.getElementById('remember-login').checked) {
+    localStorage.setItem('keepLogin', 'true');
+    localStorage.setItem('loginUser', user);
+  }
+  unlockSystem();
+}
+    else 
+    {
       alert('管理員驗證失敗！帳號或密碼錯誤。');
     }
   }
