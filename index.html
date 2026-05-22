@@ -704,7 +704,11 @@
     // 驗證成功後再行啟動 MQTT 連線，節省效能
     connectMQTT();
   }
-
+  window.addEventListener('DOMContentLoaded', () => {
+  if (localStorage.getItem('keepLogin') === 'true') {
+    unlockSystem();
+  }
+});
 
   // === 原有 MQTT 與硬體控制邏輯 ===
   const MQTT_HOST = "broker.emqx.io";
