@@ -676,10 +676,14 @@
     const pass = document.getElementById('login-pass').value;
 
     // 預設一組超級管理員帳密（防呆用，避免 localStorage 被清空時鎖死）
-    if (user === 'admin' && pass === '1234') {
-      unlockSystem();
-      return;
-    }
+   if (user === 'admin' && pass === '1234') {
+  if (document.getElementById('remember-login').checked) {
+    localStorage.setItem('keepLogin', 'true');
+    localStorage.setItem('loginUser', user);
+  }
+  unlockSystem();
+  return;
+}
 
     const savedPass = localStorage.getItem('auth_' + user);
     if (savedPass && savedPass === pass) {
