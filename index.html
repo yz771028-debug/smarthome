@@ -638,7 +638,23 @@
 <!-- 右下角吉祥物 GIF -->
 <img src="https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExM2g0Y2U1cGF5Ym15cnY1Mnd0b3psY3V0Z3V6cHFrZmpvYW8wZThwZiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/3orifhmN3ptpt9Zf0Y/giphy.gif" class="floating-gif" alt="Smart Home Mascot">
 
-<script>function switchAuth(type) {
+<script>
+  // ===== Firebase 設定 =====
+const firebaseConfig = {
+  apiKey: "AIzaSyBWAR545ZiCCAL49PqhbeYVl5eZ9iXnBr8",
+  authDomain: "smart-home-security-b06fe.firebaseapp.com",
+  databaseURL: "https://smart-home-security-b06fe-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "smart-home-security-b06fe",
+  storageBucket: "smart-home-security-b06fe.firebasestorage.app",
+  messagingSenderId: "592787545772",
+  appId: "1:592787545772:web:3c29eb9f326e919b04c909",
+  measurementId: "G-M29H6DB7YD"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+function switchAuth(type) {
   if (type === 'register') {
     document.getElementById('login-card').style.display = 'none';
     document.getElementById('register-card').style.display = 'block';
@@ -648,7 +664,7 @@
   }
 }
 
-function handleRegister() {
+async function handleRegister() {
   const user = document.getElementById('reg-user').value.trim();
   const pass = document.getElementById('reg-pass').value;
   const confirm = document.getElementById('reg-confirm').value;
@@ -663,20 +679,31 @@ function handleRegister() {
     return;
   }
 
-  if (localStorage.getItem('auth_' + user)) {
-    alert('此管理員帳號已存在！');
-    return;
+  try {
+    const snapshot = await db.ref('users/' + user).once('value');
+
+    if (snapshot.exists()) {
+      alert('此管理員帳號已存在！');
+      return;
+    }
+
+    await db.ref('users/' + user).set({
+      username: user,
+      password: pass,
+      createdAt: Date.now()
+    });
+
+    alert('管理員帳號註冊成功！請登入。');
+    switchAuth('login');
+    document.getElementById('login-user').value = user;
+
+  } catch (error) {
+    console.log(error);
+    alert('Firebase 雲端註冊失敗');
   }
-
-  localStorage.setItem('auth_' + user, pass);
-
-  alert('管理員帳號註冊成功！請登入。');
-
-  switchAuth('login');
-  document.getElementById('login-user').value = user;
 }
 
-function handleLogin() {
+async function handleLogin() {
   const user = document.getElementById('login-user').value.trim();
   const pass = document.getElementById('login-pass').value;
   const remember = document.getElementById('remember-login').checked;
@@ -686,30 +713,33 @@ function handleLogin() {
     return;
   }
 
-  if (user === 'admin' && pass === '1234') {
-    if (remember) {
-      localStorage.setItem('keepLogin', 'true');
-      localStorage.setItem('loginUser', user);
+  try {
+    const snapshot = await db.ref('users/' + user).once('value');
+
+    if (!snapshot.exists()) {
+      alert('帳號不存在');
+      return;
     }
 
-    unlockSystem();
-    return;
-  }
+    const data = snapshot.val();
 
-  const savedPass = localStorage.getItem('auth_' + user);
+    if (data.password === pass) {
+      if (remember) {
+        localStorage.setItem('keepLogin', 'true');
+        localStorage.setItem('loginUser', user);
+      }
 
-  if (savedPass && savedPass === pass) {
-    if (remember) {
-      localStorage.setItem('keepLogin', 'true');
-      localStorage.setItem('loginUser', user);
+      unlockSystem();
+
+    } else {
+      alert('密碼錯誤');
     }
 
-    unlockSystem();
-  } else {
-    alert('管理員驗證失敗！帳號或密碼錯誤。');
+  } catch (error) {
+    console.log(error);
+    alert('Firebase 雲端登入失敗');
   }
 }
-
   function unlockSystem() {
     document.getElementById('auth-overlay').classList.add('hidden');
     log("管理員驗證成功，解鎖控制面板。");
