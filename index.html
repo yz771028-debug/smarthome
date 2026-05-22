@@ -632,93 +632,77 @@
 <!-- 右下角吉祥物 GIF -->
 <img src="https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExM2g0Y2U1cGF5Ym15cnY1Mnd0b3psY3V0Z3V6cHFrZmpvYW8wZThwZiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/3orifhmN3ptpt9Zf0Y/giphy.gif" class="floating-gif" alt="Smart Home Mascot">
 
-<script>
- function handleLogin() {
-    const user = document.getElementById('login-user').value.trim();
-    const pass = document.getElementById('login-pass').value;
-
-    if (!user || !pass) {
-      alert('請輸入帳號與密碼！');
-      return;
-    }
-
-    // 1. 預設超級管理員帳密（防呆用）
-    if (user === 'admin' && pass === '1234') {
-      if (document.getElementById('remember-login').checked) {
-        localStorage.setItem('keepLogin', 'true');
-        localStorage.setItem('loginUser', user);
-      }
-      unlockSystem();
-      return;
-    }
-
-    // 2. 從 localStorage 讀取該帳號註冊時設定的密碼
-    const savedPass = localStorage.getItem('auth_' + user);
-
-    // 3. 驗證密碼是否正確
-    if (savedPass && savedPass === pass) {
-      if (document.getElementById('remember-login').checked) {
-        localStorage.setItem('keepLogin', 'true');
-        localStorage.setItem('loginUser', user);
-      }
-      unlockSystem();
-    } else {
-      alert('管理員驗證失敗！帳號或密碼錯誤。');
-    }
+<script>function switchAuth(type) {
+  if (type === 'register') {
+    document.getElementById('login-card').style.display = 'none';
+    document.getElementById('register-card').style.display = 'block';
+  } else {
+    document.getElementById('login-card').style.display = 'block';
+    document.getElementById('register-card').style.display = 'none';
   }
-  function handleRegister() {
-    const user = document.getElementById('reg-user').value.trim();
-    const pass = document.getElementById('reg-pass').value;
-    const confirm = document.getElementById('reg-confirm').value;
-
-    if (!user || !pass) {
-      alert('帳號密碼不能留空！');
-      return;
-    }
-    if (pass !== confirm) {
-      alert('兩次輸入的密碼不一致！');
-      return;
-    }
-
-    // 檢查帳號是否已被註冊
-    if (localStorage.getItem('auth_' + user)) {
-      alert('此管理員帳號已存在！');
-      return;
-    }
-
-    // 儲存帳號資料
-    localStorage.setItem('auth_' + user, pass);
-    alert('管理員帳號註冊成功！將為您切換至登入頁面。');
-    switchAuth('login');
-    document.getElementById('login-user').value = user;
-  }
-
-  function handleLogin() {
-    const user = document.getElementById('login-user').value.trim();
-    const pass = document.getElementById('login-pass').value;
-
-    // 預設一組超級管理員帳密（防呆用，避免 localStorage 被清空時鎖死）
-   if (user === 'admin' && pass === '1234') {
-  if (document.getElementById('remember-login').checked) {
-    localStorage.setItem('keepLogin', 'true');
-    localStorage.setItem('loginUser', user);
-  }
-  unlockSystem();
-  return;
 }
 
-   if (savedPass && savedPass === pass) {
-  if (document.getElementById('remember-login').checked) {
-    localStorage.setItem('keepLogin', 'true');
-    localStorage.setItem('loginUser', user);
+function handleRegister() {
+  const user = document.getElementById('reg-user').value.trim();
+  const pass = document.getElementById('reg-pass').value;
+  const confirm = document.getElementById('reg-confirm').value;
+
+  if (!user || !pass) {
+    alert('帳號密碼不能留空！');
+    return;
   }
-  unlockSystem();
+
+  if (pass !== confirm) {
+    alert('兩次輸入的密碼不一致！');
+    return;
+  }
+
+  if (localStorage.getItem('auth_' + user)) {
+    alert('此管理員帳號已存在！');
+    return;
+  }
+
+  localStorage.setItem('auth_' + user, pass);
+
+  alert('管理員帳號註冊成功！請登入。');
+
+  switchAuth('login');
+  document.getElementById('login-user').value = user;
 }
-    else 
-    {
-      alert('管理員驗證失敗！帳號或密碼錯誤。');
-    }
+
+function handleLogin() {
+  const user = document.getElementById('login-user').value.trim();
+  const pass = document.getElementById('login-pass').value;
+  const remember = document.getElementById('remember-login').checked;
+
+  if (!user || !pass) {
+    alert('請輸入帳號與密碼！');
+    return;
   }
+
+  if (user === 'admin' && pass === '1234') {
+    if (remember) {
+      localStorage.setItem('keepLogin', 'true');
+      localStorage.setItem('loginUser', user);
+    }
+
+    unlockSystem();
+    return;
+  }
+
+  const savedPass = localStorage.getItem('auth_' + user);
+
+  if (savedPass && savedPass === pass) {
+    if (remember) {
+      localStorage.setItem('keepLogin', 'true');
+      localStorage.setItem('loginUser', user);
+    }
+
+    unlockSystem();
+  } else {
+    alert('管理員驗證失敗！帳號或密碼錯誤。');
+  }
+}
 
   function unlockSystem() {
     document.getElementById('auth-overlay').classList.add('hidden');
