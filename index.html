@@ -633,17 +633,39 @@
 <img src="https://i.giphy.com/media/v1.Y2lkPTc5MGI3NjExM2g0Y2U1cGF5Ym15cnY1Mnd0b3psY3V0Z3V6cHFrZmpvYW8wZThwZiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9cw/3orifhmN3ptpt9Zf0Y/giphy.gif" class="floating-gif" alt="Smart Home Mascot">
 
 <script>
-  // === 登入註冊控制邏輯 (使用 localStorage 本地儲存) ===
-  function switchAuth(type) {
-    if (type === 'register') {
-      document.getElementById('login-card').style.display = 'none';
-      document.getElementById('register-card').style.display = 'block';
+ function handleLogin() {
+    const user = document.getElementById('login-user').value.trim();
+    const pass = document.getElementById('login-pass').value;
+
+    if (!user || !pass) {
+      alert('請輸入帳號與密碼！');
+      return;
+    }
+
+    // 1. 預設超級管理員帳密（防呆用）
+    if (user === 'admin' && pass === '1234') {
+      if (document.getElementById('remember-login').checked) {
+        localStorage.setItem('keepLogin', 'true');
+        localStorage.setItem('loginUser', user);
+      }
+      unlockSystem();
+      return;
+    }
+
+    // 2. 從 localStorage 讀取該帳號註冊時設定的密碼
+    const savedPass = localStorage.getItem('auth_' + user);
+
+    // 3. 驗證密碼是否正確
+    if (savedPass && savedPass === pass) {
+      if (document.getElementById('remember-login').checked) {
+        localStorage.setItem('keepLogin', 'true');
+        localStorage.setItem('loginUser', user);
+      }
+      unlockSystem();
     } else {
-      document.getElementById('login-card').style.display = 'block';
-      document.getElementById('register-card').style.display = 'none';
+      alert('管理員驗證失敗！帳號或密碼錯誤。');
     }
   }
-
   function handleRegister() {
     const user = document.getElementById('reg-user').value.trim();
     const pass = document.getElementById('reg-pass').value;
