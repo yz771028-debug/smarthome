@@ -963,30 +963,35 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 });
 
-let localGasThreshold = null;
-let localTempThreshold = null;
-let localHumThreshold = null;
+// ===== 避免網頁數值跳轉的控制機制 =====
+// 用來記錄最後一次修改輸入框的時間戳記
+let lastUserInteraction = {
+  gas: 0,
+  temp: 0,
+  hum: 0
+};
+
+// 監聽輸入框的輸入事件，當使用者正在輸入時，立刻更新時間戳記，防止打字到一半被覆蓋
+document.getElementById("setGas").addEventListener("input", () => lastUserInteraction.gas = Date.now());
+document.getElementById("setTemp").addEventListener("input", () => lastUserInteraction.temp = Date.now());
+document.getElementById("setHum").addEventListener("input", () => lastUserInteraction.hum = Date.now());
+
 // ===== MQTT =====
 const MQTT_HOST = "broker.emqx.io";
 const MQTT_PORT = 8084;
 const CLIENT_ID = "WebClient_" + Math.random().toString(16).substr(2, 8);
 
 const client = new Paho.MQTT.Client(MQTT_HOST, MQTT_PORT, CLIENT_ID);
-
 const TOPIC_STATUS_REPORT = "smarthome/status/report";
 
 function log(msg) {
   const logBox = document.getElementById("log");
   const time = new Date().toLocaleTimeString();
-
-  logBox.innerHTML =
-    `[${time}] ${msg}<br>` +
-    logBox.innerHTML;
+  logBox.innerHTML = `[${time}] ${msg}<br>` + logBox.innerHTML;
 }
 
 function setMqttStatus(isConnected, text) {
   const status = document.getElementById("mqtt-status");
-
   status.innerText = text;
 
   if (isConnected) {
@@ -1000,11 +1005,9 @@ function setMqttStatus(isConnected, text) {
 
 client.onConnectionLost = function(responseObject) {
   setMqttStatus(false, "MQTT：連線中斷，重新連線中...");
-
   if (responseObject.errorMessage) {
     log("MQTT 連線中斷：" + responseObject.errorMessage);
   }
-
   setTimeout(connectMQTT, 5000);
 };
 
@@ -1032,52 +1035,42 @@ client.onMessageArrived = function(message) {
     document.getElementById("v-h2").innerText = h2.toFixed(1);
     document.getElementById("v-g2").innerText = g2;
 
-    document.getElementById("v-relay").innerText =
-      relay === 1 ? "ON" : "OFF";
+    document.getElementById("v-relay").innerText = relay === 1 ? "ON" : "OFF";
+    document.getElementById("v-unlocked").innerText = unlocked === 1 ? "已解鎖" : "未解鎖";
+    document.getElementById("v-intrude").innerText = intrude === 1 ? "警報" : "正常";
+    document.getElementById("v-husky").innerText = data.husky || "--";
+    document.getElementById("v-gesture").innerText = data.gesture || "--";
 
-    document.getElementById("v-unlocked").innerText =
-      unlocked === 1 ? "已解鎖" : "未解鎖";
+    // 判斷當前時間與最後一次修改時間的差距 (5000 毫秒 = 5秒)
+    const lockTimeThreshold = 5000;
+    const now = Date.now();
 
-    document.getElementById("v-intrude").innerText =
-      intrude === 1 ? "警報" : "正常";
+    // 更新「瓦斯門檻」
+    if (data.th_g !== undefined) {
+      document.getElementById("v-th-g").innerText = data.th_g;
+      // 只有在使用者 5 秒內沒有點擊/輸入，且目前滑鼠游標不在該輸入框時，才更新輸入框的值
+      if ((now - lastUserInteraction.gas > lockTimeThreshold) && document.activeElement.id !== "setGas") {
+        document.getElementById("setGas").value = data.th_g;
+      }
+    }
 
-    document.getElementById("v-husky").innerText =
-      data.husky || "--";
+    // 更新「溫度門檻」
+    if (data.th_t !== undefined) {
+      document.getElementById("v-th-t").innerText = data.th_t;
+      if ((now - lastUserInteraction.temp > lockTimeThreshold) && document.activeElement.id !== "setTemp") {
+        document.getElementById("setTemp").value = data.th_t;
+      }
+    }
 
-    document.getElementById("v-gesture").innerText =
-      data.gesture || "--";
+    // 更新「濕度門檻」
+    if (data.th_h !== undefined) {
+      document.getElementById("v-th-h").innerText = data.th_h;
+      if ((now - lastUserInteraction.hum > lockTimeThreshold) && document.activeElement.id !== "setHum") {
+        document.getElementById("setHum").value = data.th_h;
+      }
+    }
 
-   if (data.th_g !== undefined && localGasThreshold === null) {
-  document.getElementById("v-th-g").innerText = data.th_g;
-  document.getElementById("setGas").value = data.th_g;
-}
-
-if (data.th_t !== undefined && localTempThreshold === null) {
-  document.getElementById("v-th-t").innerText = data.th_t;
-  document.getElementById("setTemp").value = data.th_t;
-}
-
-if (data.th_h !== undefined && localHumThreshold === null) {
-  document.getElementById("v-th-h").innerText = data.th_h;
-  document.getElementById("setHum").value = data.th_h;
-}
-
-if (data.th_t !== undefined) {
-  document.getElementById("v-th-t").innerText = data.th_t;
-
-  if (document.activeElement.id !== "setTemp") {
-    document.getElementById("setTemp").value = data.th_t;
-  }
-}
-
-if (data.th_h !== undefined) {
-  document.getElementById("v-th-h").innerText = data.th_h;
-
-  if (document.activeElement.id !== "setHum") {
-    document.getElementById("setHum").value = data.th_h;
-  }
-}
-
+    // 警報狀態更新
     document.getElementById("gas-alert").classList.toggle(
       "show",
       g1 >= Number(document.getElementById("setGas").value) ||
@@ -1091,27 +1084,22 @@ if (data.th_h !== undefined) {
 
     const modeBanner = document.getElementById("mode-status");
     const modeText = document.getElementById("txt-mode");
-
     modeBanner.className = "mode-banner";
 
     if (data.mode === "AUTO") {
       modeBanner.classList.add("mode-auto");
       modeText.innerText = "☀️ 自動溫控追蹤中";
-    }
-    else if (data.mode === "MANUAL") {
+    } else if (data.mode === "MANUAL") {
       modeBanner.classList.add("mode-manual");
       modeText.innerText = "🎛️ 手動控制開放中";
-    }
-    else if (data.mode === "SECURITY") {
+    } else if (data.mode === "SECURITY") {
       modeBanner.classList.add("mode-security");
       modeText.innerText = "👮 深夜防盜保全中";
-    }
-    else {
+    } else {
       modeText.innerText = "未知模式";
     }
 
-    document.getElementById("last-update").innerText =
-      new Date().toLocaleTimeString();
+    document.getElementById("last-update").innerText = new Date().toLocaleTimeString();
 
   } catch (e) {
     console.log("解析 JSON 錯誤: " + e);
@@ -1125,19 +1113,15 @@ function connectMQTT() {
   client.connect({
     onSuccess: function() {
       setMqttStatus(true, "MQTT：已連線 EMQX");
-      log("網頁已成功連線 EMQX MQTT 伺服器");
-
+      log("網頁已成功連線 EMQX MQTT 伺聽器");
       client.subscribe(TOPIC_STATUS_REPORT);
       log("已訂閱：" + TOPIC_STATUS_REPORT);
     },
-
     onFailure: function(error) {
       setMqttStatus(false, "MQTT：連線失敗，5 秒後重試");
       log("MQTT 連線失敗：" + error.errorMessage);
-
       setTimeout(connectMQTT, 5000);
     },
-
     useSSL: true,
     timeout: 8,
     keepAliveInterval: 30,
@@ -1157,40 +1141,30 @@ function sendMQTT(topic, payload) {
   message.retained = false;
 
   client.send(message);
-
   log("已發送控制指令 → " + topic + " : " + payload);
 }
 
 function sendSetting(type) {
   if (type === "gas") {
     const value = document.getElementById("setGas").value;
-
-    localGasThreshold = value;
+    lastUserInteraction.gas = Date.now(); // 記錄發送時間
     document.getElementById("v-th-g").innerText = value;
-    document.getElementById("setGas").value = value;
-
     sendMQTT("smarthome/setting/gas/cmd", value);
     log("已設定瓦斯門檻：" + value);
   }
 
   else if (type === "temp") {
     const value = document.getElementById("setTemp").value;
-
-    localTempThreshold = value;
+    lastUserInteraction.temp = Date.now(); // 記錄發送時間
     document.getElementById("v-th-t").innerText = value;
-    document.getElementById("setTemp").value = value;
-
     sendMQTT("smarthome/setting/temp/cmd", value);
     log("已設定溫度門檻：" + value);
   }
 
   else if (type === "hum") {
     const value = document.getElementById("setHum").value;
-
-    localHumThreshold = value;
+    lastUserInteraction.hum = Date.now(); // 記錄發送時間
     document.getElementById("v-th-h").innerText = value;
-    document.getElementById("setHum").value = value;
-
     sendMQTT("smarthome/setting/hum/cmd", value);
     log("已設定濕度門檻：" + value);
   }
