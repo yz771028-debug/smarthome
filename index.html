@@ -1,603 +1,1169 @@
 <!DOCTYPE html>
-<html lang="zh-Hant">
+<html lang="zh-TW">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>智慧居家安全控制</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>智慧居家安全控制系統</title>
 
-  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <!-- MQTT Paho -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"></script>
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.5/firebase-database-compat.js"></script>
 
   <style>
     * {
       box-sizing: border-box;
-      font-family: "Microsoft JhengHei", Arial, sans-serif;
     }
 
     body {
       margin: 0;
-      min-height: 100vh;
-      background:
-        radial-gradient(circle at top left, #0f4c81, transparent 35%),
-        linear-gradient(135deg, #020617, #0f172a 60%, #020617);
-      color: #e5f3ff;
+      font-family: Arial, "Microsoft JhengHei", sans-serif;
+      background: #0f172a;
+      color: white;
     }
 
-    header {
+    #app {
+      display: none;
+    }
+
+    .wrap {
+      max-width: 1200px;
+      margin: auto;
       padding: 24px;
-      text-align: center;
-      background: rgba(15, 23, 42, 0.75);
-      border-bottom: 1px solid rgba(148, 163, 184, 0.25);
-      backdrop-filter: blur(12px);
     }
 
-    header h1 {
+    .header {
+      background: linear-gradient(135deg, #1e3a8a, #0f172a);
+      padding: 28px;
+      border-radius: 20px;
+      border: 1px solid #334155;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+      margin-bottom: 20px;
+    }
+
+    h1 {
       margin: 0;
       font-size: 34px;
-      letter-spacing: 2px;
-      color: #38bdf8;
+      letter-spacing: 1px;
     }
 
-    header p {
-      margin: 8px 0 0;
+    .subtitle {
+      margin-top: 10px;
       color: #cbd5e1;
-    }
-
-    .container {
-      width: min(1200px, 94%);
-      margin: 24px auto;
-      display: grid;
-      gap: 20px;
+      font-size: 16px;
     }
 
     .top-status {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 16px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 18px;
+      align-items: center;
     }
 
-    .card {
-      background: rgba(15, 23, 42, 0.78);
-      border: 1px solid rgba(56, 189, 248, 0.25);
-      border-radius: 18px;
-      padding: 20px;
-      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.35);
-      backdrop-filter: blur(14px);
-    }
-
-    .card h2 {
-      margin-top: 0;
-      color: #7dd3fc;
-      font-size: 22px;
-      border-bottom: 1px solid rgba(125, 211, 252, 0.25);
-      padding-bottom: 10px;
-    }
-
-    .room-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-      gap: 20px;
-    }
-
-    .value {
-      font-size: 30px;
+    .status-pill {
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: #1e293b;
+      border: 1px solid #334155;
       font-weight: bold;
-      color: #f8fafc;
+      color: #e2e8f0;
     }
 
-    .label {
-      color: #94a3b8;
-      font-size: 14px;
-      margin-bottom: 4px;
+    .connected {
+      background: #065f46;
+      color: #d1fae5;
+      border-color: #10b981;
     }
 
-    .sensor-row {
+    .disconnected {
+      background: #7f1d1d;
+      color: #fecaca;
+      border-color: #ef4444;
+    }
+
+    .mode-banner {
+      padding: 10px 18px;
+      border-radius: 999px;
+      font-weight: bold;
+      border: 1px solid #334155;
+      background: #1e293b;
+      color: #e2e8f0;
+    }
+
+    .mode-auto {
+      background: #064e3b;
+      color: #d1fae5;
+      border-color: #10b981;
+    }
+
+    .mode-manual {
+      background: #1e3a8a;
+      color: #dbeafe;
+      border-color: #3b82f6;
+    }
+
+    .mode-security {
+      background: #7f1d1d;
+      color: #fecaca;
+      border-color: #ef4444;
+      animation: blink 1.2s infinite alternate;
+    }
+
+    @keyframes blink {
+      from {
+        box-shadow: 0 0 6px rgba(239,68,68,0.4);
+      }
+      to {
+        box-shadow: 0 0 18px rgba(239,68,68,0.9);
+      }
+    }
+
+    .section-title {
+      margin: 28px 0 12px;
+      font-size: 24px;
+      color: #bfdbfe;
+      border-left: 6px solid #3b82f6;
+      padding-left: 12px;
+    }
+
+    .rooms {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 18px;
+    }
+
+    .room-card,
+    .state-card,
+    .control-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    }
+
+    .room-title {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 16px;
+      color: #93c5fd;
+    }
+
+    .sensor-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 12px;
     }
 
     .sensor-box {
-      background: rgba(30, 41, 59, 0.75);
-      border-radius: 14px;
+      background: #0f172a;
+      border: 1px solid #334155;
+      border-radius: 16px;
       padding: 16px;
       text-align: center;
-      border: 1px solid rgba(148, 163, 184, 0.2);
     }
 
-    .status-line {
-      margin: 8px 0;
-      color: #dbeafe;
-      font-size: 16px;
+    .sensor-label {
+      color: #94a3b8;
+      font-size: 14px;
+      margin-bottom: 8px;
     }
 
-    .status-line span {
-      color: #38bdf8;
+    .sensor-value {
+      font-size: 28px;
       font-weight: bold;
+      color: #ffffff;
     }
 
-    .control-grid {
+    .sensor-unit {
+      font-size: 14px;
+      color: #cbd5e1;
+      margin-top: 4px;
+    }
+
+    .state-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-      gap: 12px;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .state-title {
+      color: #cbd5e1;
+      margin-bottom: 10px;
+      font-size: 15px;
+    }
+
+    .state-value {
+      font-size: 26px;
+      font-weight: bold;
+      color: #ffffff;
+    }
+
+    .controls {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .control-card h3 {
+      margin: 0 0 14px;
+      color: #bfdbfe;
+      font-size: 20px;
     }
 
     button {
+      padding: 12px 18px;
+      margin: 6px 6px 6px 0;
       border: none;
       border-radius: 12px;
-      padding: 13px 16px;
-      cursor: pointer;
       color: white;
-      background: linear-gradient(135deg, #0284c7, #0369a1);
       font-weight: bold;
-      transition: 0.2s;
+      font-size: 15px;
+      cursor: pointer;
+      transition: transform 0.12s, opacity 0.12s, box-shadow 0.12s;
     }
 
     button:hover {
-      transform: translateY(-2px);
-      filter: brightness(1.15);
+      opacity: 0.92;
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+    }
+
+    button:active {
+      transform: scale(0.96);
+    }
+
+    .btn-blue {
+      background: #2563eb;
     }
 
     .btn-green {
-      background: linear-gradient(135deg, #16a34a, #15803d);
+      background: #16a34a;
     }
 
     .btn-red {
-      background: linear-gradient(135deg, #dc2626, #991b1b);
+      background: #dc2626;
     }
 
     .btn-purple {
-      background: linear-gradient(135deg, #7c3aed, #5b21b6);
+      background: #7c3aed;
     }
 
     .btn-orange {
-      background: linear-gradient(135deg, #f97316, #c2410c);
+      background: #ea580c;
     }
 
-    .btn-gray {
-      background: linear-gradient(135deg, #475569, #334155);
+    .alert {
+      display: none;
+      margin-top: 18px;
+      padding: 16px;
+      border-radius: 16px;
+      background: #7f1d1d;
+      color: #fecaca;
+      font-weight: bold;
+      border: 1px solid #ef4444;
+      animation: blink 1s infinite alternate;
+    }
+
+    .alert.show {
+      display: block;
     }
 
     .setting-row {
-      display: grid;
-      grid-template-columns: 140px 1fr 120px;
+      display: flex;
       gap: 10px;
       align-items: center;
-      margin: 12px 0;
+      margin: 10px 0;
+      flex-wrap: wrap;
     }
 
     .setting-row label {
-      color: #e0f2fe;
-      font-weight: bold;
+      min-width: 120px;
+      color: #cbd5e1;
     }
 
-    input {
-      width: 100%;
-      padding: 12px;
+    .setting-row input {
+      flex: 1;
+      min-width: 120px;
+      padding: 10px 12px;
       border-radius: 10px;
-      border: 1px solid rgba(125, 211, 252, 0.3);
-      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid #334155;
+      background: #0f172a;
       color: white;
       outline: none;
     }
 
-    input:focus {
-      border-color: #38bdf8;
+    .log {
+      margin-top: 20px;
+      background: #020617;
+      border: 1px solid #334155;
+      color: #cbd5e1;
+      padding: 14px;
+      border-radius: 16px;
+      height: 130px;
+      overflow-y: auto;
+      font-size: 14px;
     }
 
-    .mqtt-status {
-      display: inline-block;
-      padding: 6px 12px;
-      border-radius: 999px;
-      background: #7f1d1d;
+    /* ===== Glassmorphism 登入介面 ===== */
+
+    #loginScreen {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background:
+        radial-gradient(circle at top left, rgba(59,130,246,.35), transparent 35%),
+        radial-gradient(circle at bottom right, rgba(124,58,237,.35), transparent 35%),
+        linear-gradient(135deg,#020617,#0f172a,#1e293b);
+      z-index: 9999;
+      padding: 20px;
+    }
+
+    .login-shell {
+      width: min(920px, 96vw);
+      min-height: 560px;
+      display: grid;
+      grid-template-columns: 0.9fr 1.1fr;
+      border-radius: 28px;
+      overflow: hidden;
+      background: rgba(15,23,42,.48);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255,255,255,.14);
+      box-shadow: 0 30px 80px rgba(0,0,0,.55);
+    }
+
+    .glass-sidebar {
+      padding: 34px;
+      background:
+        linear-gradient(160deg, rgba(37,99,235,.40), rgba(15,23,42,.12)),
+        rgba(255,255,255,.06);
+      border-right: 1px solid rgba(255,255,255,.12);
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .glass-logo {
+      width: 62px;
+      height: 62px;
+      border-radius: 20px;
+      background: rgba(255,255,255,.16);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 30px;
+      box-shadow: inset 0 0 18px rgba(255,255,255,.08);
+      margin-bottom: 18px;
+    }
+
+    .glass-sidebar h2 {
+      font-size: 32px;
+      margin: 0 0 12px;
+      line-height: 1.25;
+    }
+
+    .glass-sidebar p {
+      color: #cbd5e1;
+      line-height: 1.7;
+      font-size: 15px;
+    }
+
+    .glass-points {
+      margin-top: 24px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .glass-point {
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: rgba(255,255,255,.08);
+      border: 1px solid rgba(255,255,255,.10);
+      color: #e2e8f0;
+      font-size: 14px;
+    }
+
+    .login-card {
+      padding: 38px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      background: rgba(2,6,23,.20);
+    }
+
+    .login-card h2 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      text-align: center;
+    }
+
+    .login-subtitle {
+      text-align: center;
+      color: #cbd5e1;
+      font-size: 14px;
+      margin-bottom: 18px;
+    }
+
+    .tab-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 18px;
+      background: rgba(15,23,42,.7);
+      padding: 6px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,.10);
+    }
+
+    .tab-btn {
+      margin: 0;
+      border-radius: 12px;
+      background: transparent;
+      color: #cbd5e1;
+    }
+
+    .tab-btn.active {
+      background: linear-gradient(135deg,#2563eb,#38bdf8);
       color: white;
-      font-weight: bold;
     }
 
-    .mqtt-online {
-      background: #166534;
+    .auth-panel {
+      display: none;
     }
 
-    .alarm {
-      color: #f87171;
-      font-weight: bold;
+    .auth-panel.active {
+      display: block;
     }
 
-    .safe {
-      color: #4ade80;
-      font-weight: bold;
+    .login-card label {
+      display: block;
+      margin: 12px 0 6px;
+      color: #cbd5e1;
+      font-size: 14px;
     }
 
-    @media (max-width: 650px) {
-      .sensor-row {
+    .login-card input[type="text"],
+    .login-card input[type="password"] {
+      width: 100%;
+      padding: 13px 14px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(2,6,23,.72);
+      color: white;
+      outline: none;
+    }
+
+    .login-card input:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 3px rgba(56,189,248,.16);
+    }
+
+    .remember-row {
+      display: flex !important;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin: 14px 0 !important;
+      color: #cbd5e1;
+      font-size: 14px;
+    }
+
+    .remember-row input {
+      width: auto !important;
+      margin: 0 !important;
+    }
+
+    #loginBtn {
+      width: 100%;
+      background: linear-gradient(135deg,#2563eb,#38bdf8);
+      margin-top: 8px;
+    }
+
+    #registerBtn {
+      width: 100%;
+      background: linear-gradient(135deg,#16a34a,#2dd4bf);
+      margin-top: 14px;
+    }
+
+    .msg {
+      min-height: 22px;
+      text-align: center;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+
+    .login-hint {
+      color: #94a3b8;
+      text-align: center;
+      font-size: 13px;
+      margin-top: 12px;
+    }
+
+    @media (max-width: 760px) {
+      .login-shell {
         grid-template-columns: 1fr;
       }
 
-      .setting-row {
+      .glass-sidebar {
+        display: none;
+      }
+    }
+
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 28px;
+      }
+
+      .sensor-grid {
         grid-template-columns: 1fr;
       }
 
-      header h1 {
-        font-size: 26px;
+      button {
+        width: 100%;
       }
     }
   </style>
 </head>
 
 <body>
-  <header>
-    <h1>智慧居家控制</h1>
-    <p>環境監測・排風扇控制・AI 人臉追蹤・自動模式門檻設定</p>
-    <p>MQTT 狀態：<span id="mqttStatus" class="mqtt-status">離線</span></p>
-  </header>
 
-  <main class="container">
+<!-- 登入 / 註冊畫面 -->
+<div id="loginScreen">
+  <div class="login-shell">
 
-    <section class="top-status">
-      <div class="card">
-        <h2>系統狀態</h2>
-        <p class="status-line">目前模式：<span id="modeText">--</span></p>
-        <p class="status-line">排風扇 Relay：<span id="relayText">--</span></p>
-        <p class="status-line">HuskyLens：<span id="huskyText">--</span></p>
-        <p class="status-line">步進角度：<span id="angleText">--</span> 度</p>
-        <p class="status-line">手勢：<span id="gestureText">--</span></p>
-      </div>
+    <aside class="glass-sidebar">
+      <div>
+        <div class="glass-logo">🏠</div>
+        <h2>AIOT 智慧居家安全系統</h2>
+        <p>整合環境監測、遠端控制、人臉追蹤、手勢控制與瓦斯安全警報。</p>
 
-      <div class="card">
-        <h2>安全警報</h2>
-        <p class="status-line">瓦斯警報：<span id="gasAlarmText" class="safe">正常</span></p>
-        <p class="status-line">防盜警報：<span id="intrudeText" class="safe">正常</span></p>
-        <p class="status-line">人臉解鎖：<span id="unlockText">--</span></p>
-      </div>
-    </section>
-
-    <section class="room-grid">
-      <div class="card">
-        <h2>房間 1</h2>
-        <div class="sensor-row">
-          <div class="sensor-box">
-            <div class="label">溫度</div>
-            <div class="value"><span id="t1">--</span>°C</div>
-          </div>
-          <div class="sensor-box">
-            <div class="label">濕度</div>
-            <div class="value"><span id="h1">--</span>%</div>
-          </div>
-          <div class="sensor-box">
-            <div class="label">瓦斯</div>
-            <div class="value"><span id="g1">--</span></div>
-          </div>
+        <div class="glass-points">
+          <div class="glass-point">🔐 Firebase 雲端帳號登入</div>
+          <div class="glass-point">📡 MQTT 即時遠端控制</div>
+          <div class="glass-point">⚠️ 可自訂瓦斯安全門檻</div>
+          <div class="glass-point">🤖 HuskyLens AI 辨識整合</div>
         </div>
       </div>
 
-      <div class="card">
-        <h2>房間 2</h2>
-        <div class="sensor-row">
-          <div class="sensor-box">
-            <div class="label">溫度</div>
-            <div class="value"><span id="t2">--</span>°C</div>
-          </div>
-          <div class="sensor-box">
-            <div class="label">濕度</div>
-            <div class="value"><span id="h2">--</span>%</div>
-          </div>
-          <div class="sensor-box">
-            <div class="label">瓦斯</div>
-            <div class="value"><span id="g2">--</span></div>
-          </div>
+      <div style="color:#94a3b8;font-size:13px;">
+        Smart Home Security Control Panel
+      </div>
+    </aside>
+
+    <div class="login-card">
+      <h2>智慧居家安全登入</h2>
+      <div class="login-subtitle">請先登入後進入控制介面</div>
+
+      <div class="tab-row">
+        <button id="showLoginTab" class="tab-btn active" type="button">登入</button>
+        <button id="showRegisterTab" class="tab-btn" type="button">註冊</button>
+      </div>
+
+      <div id="loginPanel" class="auth-panel active">
+        <label>帳號</label>
+        <input id="loginUsername" type="text" placeholder="請輸入帳號">
+
+        <label>密碼</label>
+        <input id="loginPassword" type="password" placeholder="請輸入密碼">
+
+        <label class="remember-row">
+          <input id="rememberLogin" type="checkbox">
+          保持登入
+        </label>
+
+        <button id="loginBtn" type="button">登入</button>
+        <div id="loginMsg" class="msg"></div>
+      </div>
+
+      <div id="registerPanel" class="auth-panel">
+        <label>新帳號</label>
+        <input id="registerUsername" type="text" placeholder="至少 3 個字元">
+
+        <label>新密碼</label>
+        <input id="registerPassword" type="password" placeholder="至少 6 個字元">
+
+        <label>金鑰</label>
+        <input id="registerCode" type="password" placeholder="請輸入金鑰">
+
+        <button id="registerBtn" type="button">建立帳號</button>
+        <div id="registerMsg" class="msg"></div>
+
+        <div class="login-hint">金鑰請向管理員取得</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 控制介面 -->
+<div id="app" class="wrap">
+
+  <div class="header">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;">
+      <h1>智慧居家安全控制</h1>
+      <button id="logoutBtn" class="btn-red" type="button">登出</button>
+    </div>
+
+    <div class="subtitle">
+      AIOT 智慧環境監測、遠端控制、人臉追蹤、手勢控制與瓦斯安全警報系統
+    </div>
+
+    <div class="top-status">
+      <div id="mqtt-status" class="status-pill disconnected">MQTT：連線中...</div>
+
+      <div id="mode-status" class="mode-banner mode-auto">
+        系統模式：<span id="txt-mode">連線中...</span>
+      </div>
+
+      <div class="status-pill">
+        最後更新：<span id="last-update">--</span>
+      </div>
+    </div>
+
+    <div id="gas-alert" class="alert">
+      🚨 瓦斯濃度超標！系統已自動啟動排風扇
+    </div>
+
+    <div id="security-alert" class="alert">
+      🚨 深夜防盜警報！偵測到未註冊人臉
+    </div>
+  </div>
+
+  <div class="section-title">環境監測資料</div>
+
+  <div class="rooms">
+
+    <div class="room-card">
+      <div class="room-title">房間 1</div>
+      <div class="sensor-grid">
+        <div class="sensor-box">
+          <div class="sensor-label">🌡️ 溫度</div>
+          <div id="v-t1" class="sensor-value">--.-</div>
+          <div class="sensor-unit">°C</div>
+        </div>
+
+        <div class="sensor-box">
+          <div class="sensor-label">💧 濕度</div>
+          <div id="v-h1" class="sensor-value">--.-</div>
+          <div class="sensor-unit">%</div>
+        </div>
+
+        <div class="sensor-box">
+          <div class="sensor-label">⚠️ 瓦斯</div>
+          <div id="v-g1" class="sensor-value">----</div>
+          <div class="sensor-unit">ppm</div>
         </div>
       </div>
-    </section>
+    </div>
 
-    <section class="card">
-      <h2>模式控制</h2>
-      <div class="control-grid">
-        <button onclick="setMode('AUTO')" class="btn-green">自動模式</button>
-        <button onclick="setMode('MANUAL')" class="btn-orange">手動模式</button>
-        <button onclick="setMode('SECURITY')" class="btn-red">保全模式</button>
+    <div class="room-card">
+      <div class="room-title">房間 2</div>
+      <div class="sensor-grid">
+        <div class="sensor-box">
+          <div class="sensor-label">🌡️ 溫度</div>
+          <div id="v-t2" class="sensor-value">--.-</div>
+          <div class="sensor-unit">°C</div>
+        </div>
+
+        <div class="sensor-box">
+          <div class="sensor-label">💧 濕度</div>
+          <div id="v-h2" class="sensor-value">--.-</div>
+          <div class="sensor-unit">%</div>
+        </div>
+
+        <div class="sensor-box">
+          <div class="sensor-label">⚠️ 瓦斯</div>
+          <div id="v-g2" class="sensor-value">----</div>
+          <div class="sensor-unit">ppm</div>
+        </div>
       </div>
-    </section>
+    </div>
 
-    <section class="card">
-      <h2>自動模式門檻設定</h2>
+  </div>
 
-      <div class="setting-row">
-        <label>溫度門檻 °C</label>
-        <input id="tempThresholdInput" type="number" value="30" min="10" max="60" step="0.1">
-        <button onclick="setTempThreshold()">設定溫度</button>
-      </div>
+  <div class="section-title">系統狀態</div>
 
-      <div class="setting-row">
-        <label>濕度門檻 %</label>
-        <input id="humThresholdInput" type="number" value="80" min="30" max="100" step="1">
-        <button onclick="setHumThreshold()">設定濕度</button>
-      </div>
+  <div class="state-grid">
+    <div class="state-card">
+      <div class="state-title">🔐 人臉登入狀態</div>
+      <div id="v-unlocked" class="state-value">--</div>
+    </div>
+
+    <div class="state-card">
+      <div class="state-title">🌬️ Relay 排風扇</div>
+      <div id="v-relay" class="state-value">--</div>
+    </div>
+
+    <div class="state-card">
+      <div class="state-title">👮 防盜狀態</div>
+      <div id="v-intrude" class="state-value">--</div>
+    </div>
+
+    <div class="state-card">
+      <div class="state-title">📷 HuskyLens 模式</div>
+      <div id="v-husky" class="state-value">--</div>
+    </div>
+
+    <div class="state-card">
+      <div class="state-title">✋ 最近手勢</div>
+      <div id="v-gesture" class="state-value">--</div>
+    </div>
+
+    <div class="state-card">
+      <div class="state-title">🔥 瓦斯門檻</div>
+      <div id="v-th-g" class="state-value">1000</div>
+    </div>
+
+    <div class="state-card">
+      <div class="state-title">🌡️ 溫度門檻</div>
+      <div id="v-th-t" class="state-value">30.0</div>
+    </div>
+
+    <div class="state-card">
+      <div class="state-title">💧 濕度門檻</div>
+      <div id="v-th-h" class="state-value">80.0</div>
+    </div>
+  </div>
+
+  <div class="section-title">自訂感測器門檻</div>
+
+  <div class="controls">
+    <div class="control-card">
+      <h3>安全門檻設定</h3>
 
       <div class="setting-row">
         <label>瓦斯門檻</label>
-        <input id="gasThresholdInput" type="number" value="1000" min="100" max="5000" step="10">
-        <button onclick="setGasThreshold()">設定瓦斯</button>
+        <input id="setGas" type="number" value="1000">
+        <button class="btn-red" onclick="sendSetting('gas')">套用</button>
       </div>
 
-      <p id="thresholdStatus" class="status-line">
-        目前門檻：溫度 -- °C｜濕度 -- %｜瓦斯 --
-      </p>
-    </section>
-
-    <section class="card">
-      <h2>排風扇 Relay 控制</h2>
-      <div class="control-grid">
-        <button class="btn-green" onclick="relayControl('ON')">開啟排風扇</button>
-        <button class="btn-red" onclick="relayControl('OFF')">關閉排風扇</button>
+      <div class="setting-row">
+        <label>溫度門檻</label>
+        <input id="setTemp" type="number" step="0.1" value="30.0">
+        <button class="btn-orange" onclick="sendSetting('temp')">套用</button>
       </div>
-    </section>
 
-    <section class="card">
-      <h2>紅外線風扇控制</h2>
-      <div class="control-grid">
-        <button onclick="irControl('OPEN')" class="btn-green">開風扇 + 風量+</button>
-        <button onclick="irControl('CLOSE')" class="btn-red">關閉風扇</button>
-        <button onclick="irControl('UP')">風量 +</button>
-        <button onclick="irControl('DOWN')">風量 -</button>
-        <button onclick="irControl('SWING')" class="btn-purple">擺頭</button>
+      <div class="setting-row">
+        <label>濕度門檻</label>
+        <input id="setHum" type="number" step="0.1" value="80.0">
+        <button class="btn-blue" onclick="sendSetting('hum')">套用</button>
       </div>
-    </section>
+    </div>
+  </div>
 
-    <section class="card">
-      <h2>AI / HuskyLens 控制</h2>
-      <div class="control-grid">
-        <button onclick="huskyMode('FACE')" class="btn-purple">人臉辨識</button>
-        <button onclick="huskyMode('HAND')" class="btn-purple">手勢辨識</button>
-      </div>
-    </section>
+  <div class="section-title">遠端控制</div>
 
-    <section class="card">
-      <h2>步進馬達控制</h2>
-      <div class="control-grid">
-        <button onclick="stepperControl('LEFT')" class="btn-gray">左轉</button>
-        <button onclick="stepperControl('CENTER')" class="btn-purple">回中心</button>
-        <button onclick="stepperControl('RIGHT')" class="btn-gray">右轉</button>
-        <button onclick="stepperControl('SETCENTER')" class="btn-orange">校正目前為中心</button>
-      </div>
-    </section>
+  <div class="controls">
 
-  </main>
+    <div class="control-card">
+      <h3>系統模式切換</h3>
+      <button class="btn-green" onclick="sendMQTT('smarthome/mode/cmd', 'AUTO')">☀️ 自動模式</button>
+      <button class="btn-blue" onclick="sendMQTT('smarthome/mode/cmd', 'MANUAL')">🎛️ 手動模式</button>
+      <button class="btn-red" onclick="sendMQTT('smarthome/mode/cmd', 'SECURITY')">👮 深夜防盜</button>
+    </div>
 
-  <script>
-    // =====================================================
-    // MQTT 設定
-    // =====================================================
-    const MQTT_BROKER = "wss://broker.emqx.io:8084/mqtt";
-    const CLIENT_ID = "web_smart_home_" + Math.random().toString(16).substring(2, 10);
+    <div class="control-card">
+      <h3>HuskyLens 模式切換</h3>
+      <button class="btn-blue" onclick="sendMQTT('smarthome/husky/cmd', 'FACE')">👤 人臉辨識模式</button>
+      <button class="btn-purple" onclick="sendMQTT('smarthome/husky/cmd', 'HAND')">✋ 手勢辨識模式</button>
+    </div>
 
-    const TOPIC_STATUS = "smarthome/status/report";
+    <div class="control-card">
+      <h3>排風扇 Relay 控制</h3>
+      <button class="btn-blue" onclick="sendMQTT('smarthome/relay/cmd', 'ON')">開啟排風扇</button>
+      <button class="btn-red" onclick="sendMQTT('smarthome/relay/cmd', 'OFF')">關閉排風扇</button>
+    </div>
 
-    const TOPIC_MODE_CMD = "smarthome/mode/cmd";
-    const TOPIC_RELAY_CMD = "smarthome/relay/cmd";
-    const TOPIC_IR_CMD = "smarthome/ir/cmd";
-    const TOPIC_STEPPER_CMD = "smarthome/stepper/cmd";
-    const TOPIC_HUSKY_CMD = "smarthome/husky/cmd";
+    <div class="control-card">
+      <h3>紅外線風扇控制</h3>
+      <button class="btn-green" onclick="sendMQTT('smarthome/ir/cmd', 'OPEN')">開風扇 + 風量+</button>
+      <button class="btn-red" onclick="sendMQTT('smarthome/ir/cmd', 'CLOSE')">關風扇</button>
+      <button class="btn-blue" onclick="sendMQTT('smarthome/ir/cmd', 'UP')">風量+</button>
+      <button class="btn-blue" onclick="sendMQTT('smarthome/ir/cmd', 'DOWN')">風量-</button>
+      <button class="btn-orange" onclick="sendMQTT('smarthome/ir/cmd', 'SWING')">擺頭</button>
+    </div>
 
-    const TOPIC_SET_TEMP_CMD = "smarthome/setting/temp/cmd";
-    const TOPIC_SET_HUM_CMD  = "smarthome/setting/hum/cmd";
-    const TOPIC_SET_GAS_CMD  = "smarthome/setting/gas/cmd";
+    <div class="control-card">
+      <h3>步進馬達手動控制</h3>
+      <button class="btn-purple" onclick="sendMQTT('smarthome/stepper/cmd', 'LEFT')">⬅️ 左轉</button>
+      <button class="btn-purple" onclick="sendMQTT('smarthome/stepper/cmd', 'CENTER')">🎯 回中心</button>
+      <button class="btn-purple" onclick="sendMQTT('smarthome/stepper/cmd', 'RIGHT')">➡️ 右轉</button>
+    </div>
 
-    let client = null;
+  </div>
 
-    connectMQTT();
+  <div class="log" id="log">系統訊息...</div>
 
-    function connectMQTT() {
-      client = mqtt.connect(MQTT_BROKER, {
-        clientId: CLIENT_ID,
-        clean: true,
-        connectTimeout: 5000,
-        reconnectPeriod: 3000
-      });
+</div>
 
-      client.on("connect", () => {
-        console.log("MQTT connected");
-        setMqttStatus(true);
+<script>
+// ===== Firebase =====
+const firebaseConfig = {
+  apiKey: "AIzaSyBWAR545ZiCCAL49PqhbeYVl5eZ9iXnBr8",
+  authDomain: "smart-home-security-b06fe.firebaseapp.com",
+  databaseURL: "https://smart-home-security-b06fe-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "smart-home-security-b06fe",
+  storageBucket: "smart-home-security-b06fe.firebasestorage.app",
+  messagingSenderId: "592787545772",
+  appId: "1:592787545772:web:3c29eb9f326e919b04c909",
+  measurementId: "G-M29H6DB7YD"
+};
 
-        client.subscribe(TOPIC_STATUS);
-        client.subscribe("smarthome/alarm/gas");
-        client.subscribe("smarthome/alarm/intrude");
-      });
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-      client.on("reconnect", () => {
-        console.log("MQTT reconnecting...");
-        setMqttStatus(false, "重連中");
-      });
+document.addEventListener("DOMContentLoaded", () => {
+  const INVITE_CODE = "123456";
 
-      client.on("error", (err) => {
-        console.error("MQTT error:", err);
-        setMqttStatus(false);
-      });
+  const loginBtn = document.getElementById("loginBtn");
+  const registerBtn = document.getElementById("registerBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
 
-      client.on("offline", () => {
-        setMqttStatus(false);
-      });
+  const showLoginTab = document.getElementById("showLoginTab");
+  const showRegisterTab = document.getElementById("showRegisterTab");
+  const loginPanel = document.getElementById("loginPanel");
+  const registerPanel = document.getElementById("registerPanel");
 
-      client.on("message", (topic, message) => {
-        const payload = message.toString();
-        console.log("MQTT message:", topic, payload);
+  showLoginTab.addEventListener("click", () => {
+    loginPanel.classList.add("active");
+    registerPanel.classList.remove("active");
+    showLoginTab.classList.add("active");
+    showRegisterTab.classList.remove("active");
+  });
 
-        if (topic === TOPIC_STATUS) {
-          updateStatus(payload);
-        }
+  showRegisterTab.addEventListener("click", () => {
+    registerPanel.classList.add("active");
+    loginPanel.classList.remove("active");
+    showRegisterTab.classList.add("active");
+    showLoginTab.classList.remove("active");
+  });
 
-        if (topic === "smarthome/alarm/gas") {
-          document.getElementById("gasAlarmText").innerText =
-            payload === "1" ? "瓦斯超標" : "正常";
-          document.getElementById("gasAlarmText").className =
-            payload === "1" ? "alarm" : "safe";
-        }
+  function unlockApp() {
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("app").style.display = "block";
+  }
 
-        if (topic === "smarthome/alarm/intrude") {
-          document.getElementById("intrudeText").innerText =
-            payload === "1" ? "偵測到未註冊人臉" : "正常";
-          document.getElementById("intrudeText").className =
-            payload === "1" ? "alarm" : "safe";
-        }
-      });
+  if (localStorage.getItem("isLoggedIn") === "true") {
+    unlockApp();
+  }
+
+  loginBtn.addEventListener("click", async () => {
+    const user = document.getElementById("loginUsername").value.trim();
+    const pass = document.getElementById("loginPassword").value;
+    const msg = document.getElementById("loginMsg");
+
+    msg.style.color = "#fca5a5";
+    msg.textContent = "";
+
+    if (user === "" || pass === "") {
+      msg.textContent = "請輸入帳號與密碼";
+      return;
     }
 
-    function setMqttStatus(online, text) {
-      const el = document.getElementById("mqttStatus");
+    try {
+      const snapshot = await db.ref("users/" + user).once("value");
 
-      if (online) {
-        el.innerText = "在線";
-        el.classList.add("mqtt-online");
+      if (!snapshot.exists()) {
+        msg.textContent = "帳號不存在";
+        return;
+      }
+
+      const data = snapshot.val();
+
+      if (data.password === pass) {
+        if (document.getElementById("rememberLogin").checked) {
+          localStorage.setItem("isLoggedIn", "true");
+          localStorage.setItem("loginUser", user);
+        }
+
+        unlockApp();
+
       } else {
-        el.innerText = text || "離線";
-        el.classList.remove("mqtt-online");
+        msg.textContent = "密碼錯誤";
       }
+
+    } catch (error) {
+      console.log(error);
+      msg.textContent = "雲端登入失敗";
+    }
+  });
+
+  registerBtn.addEventListener("click", async () => {
+    const user = document.getElementById("registerUsername").value.trim();
+    const pass = document.getElementById("registerPassword").value;
+    const code = document.getElementById("registerCode").value.trim();
+    const msg = document.getElementById("registerMsg");
+
+    msg.style.color = "#fca5a5";
+    msg.textContent = "";
+
+    if (code !== INVITE_CODE) {
+      msg.textContent = "金鑰錯誤";
+      return;
     }
 
-    function sendMQTT(topic, message) {
-      if (!client || !client.connected) {
-        alert("MQTT 尚未連線，請稍後再試");
+    if (user.length < 3) {
+      msg.textContent = "帳號至少需要 3 個字元";
+      return;
+    }
+
+    if (pass.length < 6) {
+      msg.textContent = "密碼至少需要 6 個字元";
+      return;
+    }
+
+    try {
+      const snapshot = await db.ref("users/" + user).once("value");
+
+      if (snapshot.exists()) {
+        msg.textContent = "帳號已存在";
         return;
       }
 
-      client.publish(topic, String(message));
-      console.log("MQTT Send:", topic, message);
+      await db.ref("users/" + user).set({
+        username: user,
+        password: pass,
+        createdAt: Date.now()
+      });
+
+      msg.style.color = "#86efac";
+      msg.textContent = "註冊成功 ✔ 請登入";
+
+      document.getElementById("registerUsername").value = "";
+      document.getElementById("registerPassword").value = "";
+      document.getElementById("registerCode").value = "";
+
+      showLoginTab.click();
+
+    } catch (error) {
+      console.log(error);
+      msg.textContent = "雲端註冊失敗";
+    }
+  });
+
+  logoutBtn.addEventListener("click", () => {
+    const ok = confirm("確定要登出嗎？");
+
+    if (!ok) return;
+
+    localStorage.removeItem("isLoggedIn");
+    localStorage.removeItem("loginUser");
+
+    document.getElementById("app").style.display = "none";
+    document.getElementById("loginScreen").style.display = "flex";
+    document.getElementById("loginPassword").value = "";
+    document.getElementById("loginMsg").textContent = "";
+  });
+});
+
+// ===== MQTT =====
+const MQTT_HOST = "broker.emqx.io";
+const MQTT_PORT = 8084;
+const CLIENT_ID = "WebClient_" + Math.random().toString(16).substr(2, 8);
+
+const client = new Paho.MQTT.Client(MQTT_HOST, MQTT_PORT, CLIENT_ID);
+
+const TOPIC_STATUS_REPORT = "smarthome/status/report";
+
+function log(msg) {
+  const logBox = document.getElementById("log");
+  const time = new Date().toLocaleTimeString();
+
+  logBox.innerHTML =
+    `[${time}] ${msg}<br>` +
+    logBox.innerHTML;
+}
+
+function setMqttStatus(isConnected, text) {
+  const status = document.getElementById("mqtt-status");
+
+  status.innerText = text;
+
+  if (isConnected) {
+    status.classList.remove("disconnected");
+    status.classList.add("connected");
+  } else {
+    status.classList.remove("connected");
+    status.classList.add("disconnected");
+  }
+}
+
+client.onConnectionLost = function(responseObject) {
+  setMqttStatus(false, "MQTT：連線中斷，重新連線中...");
+
+  if (responseObject.errorMessage) {
+    log("MQTT 連線中斷：" + responseObject.errorMessage);
+  }
+
+  setTimeout(connectMQTT, 5000);
+};
+
+client.onMessageArrived = function(message) {
+  try {
+    const data = JSON.parse(message.payloadString);
+
+    const t1 = Number(data.t1 || 0);
+    const h1 = Number(data.h1 || 0);
+    const g1 = Number(data.g1 || 0);
+
+    const t2 = Number(data.t2 || 0);
+    const h2 = Number(data.h2 || 0);
+    const g2 = Number(data.g2 || 0);
+
+    const relay = Number(data.relay || 0);
+    const unlocked = Number(data.unlocked || 0);
+    const intrude = Number(data.intrude || 0);
+
+    document.getElementById("v-t1").innerText = t1.toFixed(1);
+    document.getElementById("v-h1").innerText = h1.toFixed(1);
+    document.getElementById("v-g1").innerText = g1;
+
+    document.getElementById("v-t2").innerText = t2.toFixed(1);
+    document.getElementById("v-h2").innerText = h2.toFixed(1);
+    document.getElementById("v-g2").innerText = g2;
+
+    document.getElementById("v-relay").innerText =
+      relay === 1 ? "ON" : "OFF";
+
+    document.getElementById("v-unlocked").innerText =
+      unlocked === 1 ? "已解鎖" : "未解鎖";
+
+    document.getElementById("v-intrude").innerText =
+      intrude === 1 ? "警報" : "正常";
+
+    document.getElementById("v-husky").innerText =
+      data.husky || "--";
+
+    document.getElementById("v-gesture").innerText =
+      data.gesture || "--";
+
+    if (data.th_g !== undefined) {
+      document.getElementById("v-th-g").innerText = data.th_g;
+      document.getElementById("setGas").value = data.th_g;
     }
 
-    // =====================================================
-    // 狀態更新
-    // =====================================================
-    function updateStatus(payload) {
-      let data;
-
-      try {
-        data = JSON.parse(payload);
-      } catch (e) {
-        console.error("JSON parse error:", e);
-        return;
-      }
-
-      setText("t1", data.t1);
-      setText("h1", data.h1);
-      setText("g1", data.g1);
-
-      setText("t2", data.t2);
-      setText("h2", data.h2);
-      setText("g2", data.g2);
-
-      setText("modeText", data.mode);
-      setText("huskyText", data.husky);
-      setText("gestureText", data.gesture);
-      setText("angleText", data.angle);
-
-      setText("relayText", data.relay == 1 ? "ON" : "OFF");
-      setText("unlockText", data.unlocked == 1 ? "已解鎖" : "未解鎖");
-
-      if (data.intrude !== undefined) {
-        document.getElementById("intrudeText").innerText =
-          data.intrude == 1 ? "偵測到未註冊人臉" : "正常";
-
-        document.getElementById("intrudeText").className =
-          data.intrude == 1 ? "alarm" : "safe";
-      }
-
-      if (data.th_t !== undefined) {
-        document.getElementById("tempThresholdInput").value = data.th_t;
-      }
-
-      if (data.th_h !== undefined) {
-        document.getElementById("humThresholdInput").value = data.th_h;
-      }
-
-      if (data.th_g !== undefined) {
-        document.getElementById("gasThresholdInput").value = data.th_g;
-      }
-
-      if (
-        data.th_t !== undefined &&
-        data.th_h !== undefined &&
-        data.th_g !== undefined
-      ) {
-        document.getElementById("thresholdStatus").innerText =
-          "目前門檻：溫度 " + data.th_t +
-          " °C｜濕度 " + data.th_h +
-          " %｜瓦斯 " + data.th_g;
-      }
-
-      if (data.th_g !== undefined) {
-        const gasAlarm =
-          Number(data.g1) >= Number(data.th_g) ||
-          Number(data.g2) >= Number(data.th_g);
-
-        document.getElementById("gasAlarmText").innerText =
-          gasAlarm ? "瓦斯超標" : "正常";
-
-        document.getElementById("gasAlarmText").className =
-          gasAlarm ? "alarm" : "safe";
-      }
+    if (data.th_t !== undefined) {
+      document.getElementById("v-th-t").innerText = data.th_t;
+      document.getElementById("setTemp").value = data.th_t;
     }
 
-    function setText(id, value) {
-      if (value === undefined || value === null || value === "") return;
-      document.getElementById(id).innerText = value;
+    if (data.th_h !== undefined) {
+      document.getElementById("v-th-h").innerText = data.th_h;
+      document.getElementById("setHum").value = data.th_h;
     }
 
-    // =====================================================
-    // 控制函式
-    // =====================================================
-    function setMode(mode) {
-      sendMQTT(TOPIC_MODE_CMD, mode);
+    document.getElementById("gas-alert").classList.toggle(
+      "show",
+      g1 >= Number(document.getElementById("setGas").value) ||
+      g2 >= Number(document.getElementById("setGas").value)
+    );
+
+    document.getElementById("security-alert").classList.toggle(
+      "show",
+      intrude === 1
+    );
+
+    const modeBanner = document.getElementById("mode-status");
+    const modeText = document.getElementById("txt-mode");
+
+    modeBanner.className = "mode-banner";
+
+    if (data.mode === "AUTO") {
+      modeBanner.classList.add("mode-auto");
+      modeText.innerText = "☀️ 自動溫控追蹤中";
+    }
+    else if (data.mode === "MANUAL") {
+      modeBanner.classList.add("mode-manual");
+      modeText.innerText = "🎛️ 手動控制開放中";
+    }
+    else if (data.mode === "SECURITY") {
+      modeBanner.classList.add("mode-security");
+      modeText.innerText = "👮 深夜防盜保全中";
+    }
+    else {
+      modeText.innerText = "未知模式";
     }
 
-    function relayControl(cmd) {
-      sendMQTT(TOPIC_RELAY_CMD, cmd);
-    }
+    document.getElementById("last-update").innerText =
+      new Date().toLocaleTimeString();
 
-    function irControl(cmd) {
-      sendMQTT(TOPIC_IR_CMD, cmd);
-    }
+  } catch (e) {
+    console.log("解析 JSON 錯誤: " + e);
+    log("解析 JSON 錯誤，請確認 ESP 回傳格式");
+  }
+};
 
-    function stepperControl(cmd) {
-      sendMQTT(TOPIC_STEPPER_CMD, cmd);
-    }
+function connectMQTT() {
+  setMqttStatus(false, "MQTT：連線中...");
 
-    function huskyMode(mode) {
-      sendMQTT(TOPIC_HUSKY_CMD, mode);
-    }
+  client.connect({
+    onSuccess: function() {
+      setMqttStatus(true, "MQTT：已連線 EMQX");
+      log("網頁已成功連線 EMQX MQTT 伺服器");
 
-    function setTempThreshold() {
-      const value = document.getElementById("tempThresholdInput").value;
+      client.subscribe(TOPIC_STATUS_REPORT);
+      log("已訂閱：" + TOPIC_STATUS_REPORT);
+    },
 
-      if (value === "") {
-        alert("請輸入溫度門檻");
-        return;
-      }
+    onFailure: function(error) {
+      setMqttStatus(false, "MQTT：連線失敗，5 秒後重試");
+      log("MQTT 連線失敗：" + error.errorMessage);
 
-      sendMQTT(TOPIC_SET_TEMP_CMD, value);
-      alert("已送出溫度門檻：" + value + " °C");
-    }
+      setTimeout(connectMQTT, 5000);
+    },
 
-    function setHumThreshold() {
-      const value = document.getElementById("humThresholdInput").value;
+    useSSL: true,
+    timeout: 8,
+    keepAliveInterval: 30,
+    cleanSession: true
+  });
+}
 
-      if (value === "") {
-        alert("請輸入濕度門檻");
-        return;
-      }
+function sendMQTT(topic, payload) {
+  if (!client.isConnected()) {
+    alert("MQTT 尚未連線，請稍後再試");
+    return;
+  }
 
-      sendMQTT(TOPIC_SET_HUM_CMD, value);
-      alert("已送出濕度門檻：" + value + " %");
-    }
+  const message = new Paho.MQTT.Message(String(payload));
+  message.destinationName = topic;
+  message.qos = 1;
+  message.retained = false;
 
-    function setGasThreshold() {
-      const value = document.getElementById("gasThresholdInput").value;
+  client.send(message);
 
-      if (value === "") {
-        alert("請輸入瓦斯門檻");
-        return;
-      }
+  log("已發送控制指令 → " + topic + " : " + payload);
+}
 
-      sendMQTT(TOPIC_SET_GAS_CMD, value);
-      alert("已送出瓦斯門檻：" + value);
-    }
-  </script>
+function sendSetting(type) {
+  if (type === "gas") {
+    const value = document.getElementById("setGas").value;
+    sendMQTT("smarthome/setting/gas/cmd", value);
+    log("已設定瓦斯門檻：" + value);
+  }
+
+  else if (type === "temp") {
+    const value = document.getElementById("setTemp").value;
+    sendMQTT("smarthome/setting/temp/cmd", value);
+    log("已設定溫度門檻：" + value);
+  }
+
+  else if (type === "hum") {
+    const value = document.getElementById("setHum").value;
+    sendMQTT("smarthome/setting/hum/cmd", value);
+    log("已設定濕度門檻：" + value);
+  }
+}
+
+connectMQTT();
+</script>
+
 </body>
 </html>
