@@ -1047,12 +1047,19 @@ client.onMessageArrived = function(message) {
     document.getElementById("v-gesture").innerText =
       data.gesture || "--";
 
-    if (data.th_g !== undefined) {
+   if (data.th_g !== undefined && localGasThreshold === null) {
   document.getElementById("v-th-g").innerText = data.th_g;
+  document.getElementById("setGas").value = data.th_g;
+}
 
-  if (document.activeElement.id !== "setGas") {
-    document.getElementById("setGas").value = data.th_g;
-  }
+if (data.th_t !== undefined && localTempThreshold === null) {
+  document.getElementById("v-th-t").innerText = data.th_t;
+  document.getElementById("setTemp").value = data.th_t;
+}
+
+if (data.th_h !== undefined && localHumThreshold === null) {
+  document.getElementById("v-th-h").innerText = data.th_h;
+  document.getElementById("setHum").value = data.th_h;
 }
 
 if (data.th_t !== undefined) {
