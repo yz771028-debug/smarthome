@@ -546,12 +546,80 @@
         <p>整合環境監測、遠端控制、人臉追蹤、手勢控制與瓦斯安全警報。</p>
 
         <div class="glass-points">
-          <div class="glass-point">🔐 Firebase 雲端帳號登入</div>
-          <div class="glass-point">📡 MQTT 即時遠端控制</div>
-          <div class="glass-point">⚠️ 可自訂瓦斯安全門檻</div>
-          <div class="glass-point">🤖 HuskyLens AI 辨識整合</div>
+          <div class="glass-point"><span>🔐</span> Firebase 雲端帳號登入</div>
+          <div class="glass-point"><span>📡</span> MQTT 即時遠端控制</div>
+          <div class="glass-point"><span>⚠️</span> 可自訂瓦斯安全門檻</div>
+          <div class="glass-point"><span>🤖</span> HuskyLens AI 辨識整合</div>
         </div>
       </div>
+
+      <div style="color:#64748b; font-size:13px; letter-spacing: 0.5px;">
+        專題製作
+      </div>
+    </aside>
+
+    <div class="login-card">
+      <h2>智慧居家安全系統</h2>
+      <div class="login-subtitle">請選擇操作模式以驗證身分</div>
+
+      <div class="tab-row">
+        <button id="showLoginTab" class="tab-btn active" type="button">登入帳號</button>
+        <button id="showRegisterTab" class="tab-btn" type="button">新戶註冊</button>
+      </div>
+
+      <!-- 登入面板 -->
+      <div id="loginPanel" class="auth-panel active">
+        <label>使用者帳號</label>
+        <div class="input-group">
+          <span class="icon">👤</span>
+          <input id="loginUsername" type="text" placeholder="請輸入您的帳號">
+        </div>
+
+        <label>安全密碼</label>
+        <div class="input-group">
+          <span class="icon">🔒</span>
+          <input id="loginPassword" type="password" placeholder="請輸入您的密碼">
+        </div>
+
+        <label class="remember-row">
+          <input id="rememberLogin" type="checkbox">
+          保持登入狀態
+        </label>
+
+        <button id="loginBtn" type="button">安全登入</button>
+        <div id="loginMsg" class="msg"></div>
+      </div>
+
+      <!-- 註冊面板 -->
+      <div id="registerPanel" class="auth-panel">
+        <label>設定新帳號</label>
+        <div class="input-group">
+          <span class="icon">👤</span>
+          <input id="registerUsername" type="text" placeholder="請輸入 3 個字元以上的帳號">
+        </div>
+
+        <label>設定新密碼</label>
+        <div class="input-group">
+          <span class="icon">🔒</span>
+          <input id="registerPassword" type="password" placeholder="請輸入 6 個字元以上的密碼">
+        </div>
+
+        <label>系統註冊金鑰</label>
+        <div class="input-group">
+          <span class="icon">🔑</span>
+          <input id="registerCode" type="password" placeholder="請輸入防護網金鑰">
+        </div>
+
+        <button id="registerBtn" type="button">建立安全帳號</button>
+        <div id="registerMsg" class="msg"></div>
+
+        <div class="hint-box">
+          ⚠️ <strong>安全提示</strong><br>為防範外部惡意註冊，請向系統管理員獲取環境專屬的「註冊金鑰」後方可開通。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 
       <div style="color:#94a3b8;font-size:13px;">
         專題製作
