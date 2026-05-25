@@ -1045,8 +1045,16 @@ client.onMessageArrived = function(message) {
     document.getElementById("v-unlocked").innerText = unlocked === 1 ? "已解鎖" : "未解鎖";
     document.getElementById("v-intrude").innerText = intrude === 1 ? "警報" : "正常";
     document.getElementById("v-husky").innerText = data.husky || "--";
-    document.getElementById("v-gesture").innerText = data.gesture || "--";
+    let gestureText = "--";
 
+if (data.gesture === "OPEN") gestureText = "開啟風扇";
+else if (data.gesture === "CLOSE") gestureText = "關閉風扇";
+else if (data.gesture === "UP") gestureText = "風量增加";
+else if (data.gesture === "DOWN") gestureText = "風量降低";
+else if (data.gesture === "SWING") gestureText = "擺頭";
+else if (data.gesture) gestureText = data.gesture;
+
+document.getElementById("v-gesture").innerText = gestureText;
     // 判斷當前時間與最後一次修改時間的差距 (5000 毫秒 = 5秒)
     const lockTimeThreshold = 5000;
     const now = Date.now();
