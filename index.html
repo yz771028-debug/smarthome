@@ -1053,28 +1053,46 @@ client.onMessageArrived = function(message) {
 
     // 更新「瓦斯門檻」
     if (data.th_g !== undefined) {
-      document.getElementById("v-th-g").innerText = data.th_g;
-      // 只有在使用者 5 秒內沒有點擊/輸入，且目前滑鼠游標不在該輸入框時，才更新輸入框的值
-      if ((now - lastUserInteraction.gas > lockTimeThreshold) && document.activeElement.id !== "setGas") {
-        document.getElementById("setGas").value = data.th_g;
-      }
+  if (pendingThreshold.gas === null || String(data.th_g) === String(pendingThreshold.gas)) {
+    document.getElementById("v-th-g").innerText = data.th_g;
+
+    if (document.activeElement.id !== "setGas") {
+      document.getElementById("setGas").value = data.th_g;
     }
 
-    // 更新「溫度門檻」
-    if (data.th_t !== undefined) {
-      document.getElementById("v-th-t").innerText = data.th_t;
-      if ((now - lastUserInteraction.temp > lockTimeThreshold) && document.activeElement.id !== "setTemp") {
-        document.getElementById("setTemp").value = data.th_t;
-      }
+    if (String(data.th_g) === String(pendingThreshold.gas)) {
+      pendingThreshold.gas = null;
+    }
+  }
+}
+
+if (data.th_t !== undefined) {
+  if (pendingThreshold.temp === null || String(data.th_t) === String(pendingThreshold.temp)) {
+    document.getElementById("v-th-t").innerText = data.th_t;
+
+    if (document.activeElement.id !== "setTemp") {
+      document.getElementById("setTemp").value = data.th_t;
     }
 
-    // 更新「濕度門檻」
-    if (data.th_h !== undefined) {
-      document.getElementById("v-th-h").innerText = data.th_h;
-      if ((now - lastUserInteraction.hum > lockTimeThreshold) && document.activeElement.id !== "setHum") {
-        document.getElementById("setHum").value = data.th_h;
-      }
+    if (String(data.th_t) === String(pendingThreshold.temp)) {
+      pendingThreshold.temp = null;
     }
+  }
+}
+
+if (data.th_h !== undefined) {
+  if (pendingThreshold.hum === null || String(data.th_h) === String(pendingThreshold.hum)) {
+    document.getElementById("v-th-h").innerText = data.th_h;
+
+    if (document.activeElement.id !== "setHum") {
+      document.getElementById("setHum").value = data.th_h;
+    }
+
+    if (String(data.th_h) === String(pendingThreshold.hum)) {
+      pendingThreshold.hum = null;
+    }
+  }
+}
 
     // 警報狀態更新
     document.getElementById("gas-alert").classList.toggle(
