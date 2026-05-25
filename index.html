@@ -1158,6 +1158,8 @@ function sendMQTT(topic, payload) {
   log("已發送控制指令 → " + topic + " : " + payload);
 }
 
+let lastSettingClickTime = 0;
+const settingCooldown = 2000;
 function sendSetting(type) {
   if (type === "gas") {
     const value = document.getElementById("setGas").value;
