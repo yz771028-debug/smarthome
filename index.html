@@ -1161,6 +1161,15 @@ function sendMQTT(topic, payload) {
 let lastSettingClickTime = 0;
 const settingCooldown = 2000;
 function sendSetting(type) {
+  const now = Date.now();
+
+  if (now - lastSettingClickTime < settingCooldown) {
+    alert("請等待 2 秒後再設定");
+    return;
+  }
+
+  lastSettingClickTime = now;
+
   if (type === "gas") {
     const value = document.getElementById("setGas").value;
 
