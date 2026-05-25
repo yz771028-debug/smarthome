@@ -971,6 +971,12 @@ let lastUserInteraction = {
   hum: 0
 };
 
+let pendingThreshold = {
+  gas: null,
+  temp: null,
+  hum: null
+};
+
 // 監聽輸入框的輸入事件，當使用者正在輸入時，立刻更新時間戳記，防止打字到一半被覆蓋
 document.getElementById("setGas").addEventListener("input", () => lastUserInteraction.gas = Date.now());
 document.getElementById("setTemp").addEventListener("input", () => lastUserInteraction.temp = Date.now());
