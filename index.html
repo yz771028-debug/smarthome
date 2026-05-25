@@ -1171,29 +1171,43 @@ function sendMQTT(topic, payload) {
 function sendSetting(type) {
   if (type === "gas") {
     const value = document.getElementById("setGas").value;
-    lastUserInteraction.gas = Date.now(); // 記錄發送時間
+
+    pendingThreshold.gas = value;
+    lastUserInteraction.gas = Date.now();
+
     document.getElementById("v-th-g").innerText = value;
+    document.getElementById("setGas").value = value;
+
     sendMQTT("smarthome/setting/gas/cmd", value);
     log("已設定瓦斯門檻：" + value);
   }
 
   else if (type === "temp") {
     const value = document.getElementById("setTemp").value;
-    lastUserInteraction.temp = Date.now(); // 記錄發送時間
+
+    pendingThreshold.temp = value;
+    lastUserInteraction.temp = Date.now();
+
     document.getElementById("v-th-t").innerText = value;
+    document.getElementById("setTemp").value = value;
+
     sendMQTT("smarthome/setting/temp/cmd", value);
     log("已設定溫度門檻：" + value);
   }
 
   else if (type === "hum") {
     const value = document.getElementById("setHum").value;
-    lastUserInteraction.hum = Date.now(); // 記錄發送時間
+
+    pendingThreshold.hum = value;
+    lastUserInteraction.hum = Date.now();
+
     document.getElementById("v-th-h").innerText = value;
+    document.getElementById("setHum").value = value;
+
     sendMQTT("smarthome/setting/hum/cmd", value);
     log("已設定濕度門檻：" + value);
   }
 }
-
 connectMQTT();
 </script>
 
