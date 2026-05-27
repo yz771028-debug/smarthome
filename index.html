@@ -1127,7 +1127,7 @@ function connectMQTT() {
   client.connect({
     onSuccess: function() {
       setMqttStatus(true, "MQTT：已連線 EMQX");
-      log("網頁已成功連線 EMQX MQTT 伺聽器");
+      log("網頁已成功連線 EMQX MQTT");
       client.subscribe(TOPIC_STATUS_REPORT);
       log("已訂閱：" + TOPIC_STATUS_REPORT);
     },
